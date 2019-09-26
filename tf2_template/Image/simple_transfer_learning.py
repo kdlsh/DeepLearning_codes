@@ -115,6 +115,7 @@ plt.figure(figsize=(10,9))
 plt.subplots_adjust(hspace=0.5)
 #for n in range(30):
 for n in range(15):
+    #plt.subplot(6,5,n+1)
     plt.subplot(3,5,n+1)
     plt.imshow(image_batch[n])
     color = "green" if predicted_id[n] == label_id[n] else "red"
