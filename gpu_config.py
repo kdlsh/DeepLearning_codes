@@ -1,6 +1,10 @@
 
 # https://www.tensorflow.org/beta/guide/using_gpu
 
+import os
+
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
 import tensorflow as tf
 # from keras.backend import tensorflow_backend as K
 

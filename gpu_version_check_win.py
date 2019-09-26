@@ -6,6 +6,8 @@ import keras as kr
 import tensorflow_hub as hub
 import tensorflow_datasets as tfds
 
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
 cuDNN_lib="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.0\\include\\cudnn.h"
 
 tf_ver = tf.__version__
