@@ -1,4 +1,4 @@
-## OOM error
+## GTX1050 2G -> OOM error, GTX1060 3G -> working
 # https://www.tensorflow.org/beta/tutorials/text/text_classification_rnn
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 def plot_graphs(history, string):
-  plt.plot(history.history[string])
-  plt.plot(history.history['val_'+string])
-  plt.xlabel("Epochs")
-  plt.ylabel(string)
-  plt.legend([string, 'val_'+string])
-  plt.show()
+    plt.plot(history.history[string])
+    plt.plot(history.history['val_'+string])
+    plt.xlabel("Epochs")
+    plt.ylabel(string)
+    plt.legend([string, 'val_'+string])
+    plt.show()
 
 ## Dataset
 dataset, info = tfds.load('imdb_reviews/subwords8k', with_info=True, as_supervised=True)
@@ -56,7 +56,7 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(1, activation='sigmoid')
 ])
 
-## Stack wto LSTM layers
+## Stack two LSTM layers
 # model = tf.keras.Sequential([
 #     tf.keras.layers.Embedding(tokenizer.vocab_size, 64),
 #     tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(

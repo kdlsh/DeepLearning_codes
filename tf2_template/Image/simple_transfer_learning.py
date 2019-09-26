@@ -1,4 +1,6 @@
 ## fit_generator occured OOM error -> use fit
+## GTX1050 2G -> fit_generator OOM error, GTX1060 3G -> fit_generator Resource exhausted: OOM
+## reduce batch_size 32 to 16 -> working
 # https://www.tensorflow.org/beta/tutorials/images/hub_with_keras
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -13,17 +15,17 @@ import PIL.Image as Image
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-## GPU config
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-  try:
-    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-    # tf.config.experimental.set_memory_growth(gpus[0], True)
-    tf.config.experimental.set_virtual_device_configuration(
-        gpus[0],
-        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-  except RuntimeError as e:
-    print(e)
+# ## GPU config
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#   try:
+#     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+#     # tf.config.experimental.set_memory_growth(gpus[0], True)
+#     tf.config.experimental.set_virtual_device_configuration(
+#         gpus[0],
+#         [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+#   except RuntimeError as e:
+#     print(e)
 
 ## Dataset
 flower_photos_url = 'https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz'
@@ -31,7 +33,8 @@ data_root = tf.keras.utils.get_file('flower_photos', flower_photos_url, untar=Tr
 
 IMAGE_SHAPE = (224, 224)
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1/255)
-image_data = image_generator.flow_from_directory(str(data_root), target_size=IMAGE_SHAPE)
+image_data = image_generator.flow_from_directory(str(data_root), target_size=IMAGE_SHAPE, batch_size=16)
+# print(image_data.batch_size) # default batch_size = 32
 
 for image_batch, label_batch in image_data:
     print("Image batch shape: ", image_batch.shape)
@@ -74,13 +77,13 @@ class CollectBatchStats(tf.keras.callbacks.Callback):
 
 steps_per_epoch = np.ceil(image_data.samples/image_data.batch_size)
 batch_stats_callback = CollectBatchStats()
-# history = model.fit_generator(image_data, epochs=2,
-#                               steps_per_epoch=steps_per_epoch,
-#                               callbacks = [batch_stats_callback])
+history = model.fit_generator(image_data, epochs=2,
+                              steps_per_epoch=steps_per_epoch,
+                              callbacks = [batch_stats_callback])
 
-history = model.fit(image_data, epochs=2,
-                    steps_per_epoch=steps_per_epoch,
-                    callbacks = [batch_stats_callback])
+# history = model.fit(image_data, epochs=2,
+#                     steps_per_epoch=steps_per_epoch,
+#                     callbacks = [batch_stats_callback])
 
 ## Evaluate
 plt.figure()
@@ -110,12 +113,13 @@ label_id = np.argmax(label_batch, axis=-1)
 
 plt.figure(figsize=(10,9))
 plt.subplots_adjust(hspace=0.5)
-for n in range(30):
-  plt.subplot(6,5,n+1)
-  plt.imshow(image_batch[n])
-  color = "green" if predicted_id[n] == label_id[n] else "red"
-  plt.title(predicted_label_batch[n].title(), color=color)
-  plt.axis('off')
+#for n in range(30):
+for n in range(15):
+    plt.subplot(3,5,n+1)
+    plt.imshow(image_batch[n])
+    color = "green" if predicted_id[n] == label_id[n] else "red"
+    plt.title(predicted_label_batch[n].title(), color=color)
+    plt.axis('off')
 _ = plt.suptitle("Model predictions (green: correct, red: incorrect)")
 plt.show()
 
