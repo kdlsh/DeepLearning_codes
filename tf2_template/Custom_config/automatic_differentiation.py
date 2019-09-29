@@ -47,7 +47,7 @@ def f(x, y):
     output = 1.0
     for i in range(y):
         if i > 1 and i < 5:
-        output = tf.multiply(output, x)
+            output = tf.multiply(output, x)
     return output
 
 def grad(x, y):
