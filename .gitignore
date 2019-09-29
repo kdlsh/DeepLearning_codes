@@ -5,3 +5,5 @@
 *.data-00000-of-00002
 *.data-00001-of-00002
 tf2_template/Text/training_checkpoints/checkpoint
+*.jpg
+*.npy
