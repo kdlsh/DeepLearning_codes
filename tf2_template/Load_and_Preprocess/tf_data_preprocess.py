@@ -47,7 +47,7 @@ def plot_batch_sizes(ds):
 
 # repeat(epoch), batch(batch_size)
 titanic_batches = titanic_lines.repeat(3).batch(128)
-# plot_batch_sizes(titanic_batches)
+plot_batch_sizes(titanic_batches)
 
 # clear epoch separation
 titanic_batches = titanic_lines.batch(128).repeat(3)
@@ -231,3 +231,172 @@ predict_5_steps = tf.data.Dataset.zip((features, labels))
 for features, label in predict_5_steps.take(3):
     print(features.numpy(), " => ", label.numpy())
 
+# Using window
+window_size = 5
+
+windows = range_ds.window(window_size, shift=1)
+# for sub_ds in windows.take(5):
+#     print(sub_ds)
+
+# for x in windows.flat_map(lambda x:x).take(30):
+#     print(x.numpy(), end=' ')
+
+def sub_to_batch(sub):
+    return sub.batch(window_size, drop_remainder=True)
+
+# for example in windows.flat_map(sub_to_batch).take(5):
+#     print(example.numpy())
+
+def make_window_dataset(ds, window_size=5, shift=1, stride=1):
+    windows = ds.window(window_size, shift=shift, stride=stride)
+
+    def sub_to_batch(sub):
+        return sub.batch(window_size, drop_remainder=True)
+
+    windows = windows.flat_map(sub_to_batch)
+    return windows
+
+ds = make_window_dataset(range_ds, window_size=10, shift = 5, stride=3)
+
+for example in ds.take(10):
+    print(example.numpy())
+
+dense_labels_ds = ds.map(dense_1_step)
+
+for inputs,labels in dense_labels_ds.take(3):
+    print(inputs.numpy(), "=>", labels.numpy())
+
+## Resampling (Imbalanced data)
+zip_path = tf.keras.utils.get_file(
+    origin='https://storage.googleapis.com/download.tensorflow.org/data/creditcard.zip',
+    fname='creditcard.zip',
+    extract=True)
+
+csv_path = zip_path.replace('.zip','.csv')
+
+creditcard_ds = tf.data.experimental.make_csv_dataset(
+    csv_path, batch_size=1024, label_name="Class",
+    # Set the column types: 30 floats and an int.
+    column_defaults=[float()]*30+[int()])
+
+def count(counts, batch):
+    features, labels = batch
+    class_1 = labels == 1
+    class_1 = tf.cast(class_1, tf.int32)
+
+    class_0 = labels == 0
+    class_0 = tf.cast(class_0, tf.int32)
+
+    counts['class_0'] += tf.reduce_sum(class_0)
+    counts['class_1'] += tf.reduce_sum(class_1)
+
+    return counts
+
+counts = creditcard_ds.take(10).reduce(
+    initial_state={'class_0':0, 'class_1':0},
+    reduce_func = count)
+
+counts = np.array([counts['class_0'].numpy(),
+                   counts['class_1'].numpy()]).astype(np.float32)
+
+fractions = counts/counts.sum()
+print(fractions)
+
+# Datasets sampling
+negative_ds = creditcard_ds.unbatch().filter(lambda features,label: label==0).repeat()
+positive_ds = creditcard_ds.unbatch().filter(lambda features,label: label==1).repeat()
+
+# for features, label in positive_ds.batch(10).take(1):
+#     print(label.numpy())
+
+# tf.data.experimental.sample_from_datasets pass datasets and weight
+balanced_ds = tf.data.experimental.sample_from_datasets([negative_ds, positive_ds], [0.5, 0.5]).batch(10)
+
+# for features, labels in balanced_ds.take(10):
+#     print(labels.numpy())
+
+## Rejection resampling (loading it once)
+def class_func(features, label):
+    return label
+
+resampler = tf.data.experimental.rejection_resample(
+    class_func, target_dist=[0.5, 0.5], initial_dist=fractions)
+
+resample_ds = creditcard_ds.unbatch().apply(resampler).batch(10)
+
+balanced_ds = resample_ds.map(lambda extra_label, features_and_label: features_and_label)
+
+for features, labels in balanced_ds.take(10):
+    print(labels.numpy())
+
+## Using high-level APIs
+# tf.keras
+train, test = tf.keras.datasets.fashion_mnist.load_data()
+
+images, labels = train
+images = images/255.0
+labels = labels.astype(np.int32)
+
+fmnist_train_ds = tf.data.Dataset.from_tensor_slices((images, labels))
+fmnist_train_ds = fmnist_train_ds.shuffle(5000).batch(32)
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(10, activation='softmax')
+    ])
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
+              metrics=['accuracy'])
+
+#model.fit(fmnist_train_ds, epochs=2)
+model.fit(fmnist_train_ds.repeat(), epochs=2, steps_per_epoch=20)
+
+# loss, accuracy = model.evaluate(fmnist_train_ds)
+# print("Loss :", loss)
+# print("Accuracy :", accuracy)
+loss, accuracy = model.evaluate(fmnist_train_ds.repeat(), steps=10)
+print("Loss :", loss)
+print("Accuracy :", accuracy)
+
+predict_ds = tf.data.Dataset.from_tensor_slices(images).batch(32)
+result = model.predict(predict_ds , steps = 10)
+print(result.shape)
+result = model.predict(fmnist_train_ds, steps = 10)
+print(result.shape)
+
+## tf.estimator
+import tensorflow_datasets as tfds
+
+def train_input_fn():
+    titanic = tf.data.experimental.make_csv_dataset(
+        titanic_file, batch_size=32,
+        label_name="survived")
+    titanic_batches = (
+        titanic.cache().repeat().shuffle(500)
+        .prefetch(tf.data.experimental.AUTOTUNE))
+    return titanic_batches
+
+embark = tf.feature_column.categorical_column_with_hash_bucket('embark_town', 32)
+cls = tf.feature_column.categorical_column_with_vocabulary_list('class', ['First', 'Second', 'Third']) 
+age = tf.feature_column.numeric_column('age')
+
+import tempfile
+model_dir = tempfile.mkdtemp()
+model = tf.estimator.LinearClassifier(
+    model_dir=model_dir,
+    feature_columns=[embark, cls, age],
+    n_classes=2
+)
+
+model = model.train(input_fn=train_input_fn, steps=100)
+
+result = model.evaluate(train_input_fn, steps=10)
+
+for key, value in result.items():
+    print(key, ":", value)
+
+for pred in model.predict(train_input_fn):
+    for key, value in pred.items():
+        print(key, ":", value)
+    break
