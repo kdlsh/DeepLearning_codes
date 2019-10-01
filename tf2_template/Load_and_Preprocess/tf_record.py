@@ -115,12 +115,13 @@ filename = 'test.tfrecord'
 writer = tf.data.experimental.TFRecordWriter(filename)
 writer.write(serialized_features_dataset)
 
+## Reading a TFRecord file
 filenames = [filename]
 raw_dataset = tf.data.TFRecordDataset(filenames)
 raw_dataset
 
-for raw_record in raw_dataset.take(10):
-    print(repr(raw_record))
+# for raw_record in raw_dataset.take(10):
+#     print(repr(raw_record))
 
 # Create a description of the features.
 feature_description = {
@@ -140,4 +141,90 @@ parsed_dataset
 for parsed_record in parsed_dataset.take(10):
     print(repr(parsed_record))
 
-## 
+## TFRecord files in Python
+# Write the `tf.Example` observations to the file.
+with tf.io.TFRecordWriter(filename) as writer:
+    for i in range(n_observations):
+        example = serialize_example(feature0[i], feature1[i], feature2[i], feature3[i])
+        writer.write(example)
+
+# Reading a TFRecord file
+filenames = [filename]
+raw_dataset = tf.data.TFRecordDataset(filenames)
+raw_dataset
+
+# for raw_record in raw_dataset.take(1):
+#     example = tf.train.Example()
+#     example.ParseFromString(raw_record.numpy())
+#     print(example)
+
+## Walkthrough: Reading and writing image data
+cat_on_snow_url = 'https://storage.googleapis.com/download.tensorflow.org/example_images/320px-Felis_catus-cat_on_snow.jpg'
+cat_in_snow  = tf.keras.utils.get_file('320px-Felis_catus-cat_on_snow.jpg', cat_on_snow_url)
+bridge_url = 'https://storage.googleapis.com/download.tensorflow.org/example_images/194px-New_East_River_Bridge_from_Brooklyn_det.4a09796u.jpg'
+williamsburg_bridge = tf.keras.utils.get_file('194px-New_East_River_Bridge_from_Brooklyn_det.4a09796u.jpg', bridge_url)
+
+display.display(display.Image(filename=cat_in_snow))
+display.display(display.HTML('Image cc-by: <a "href=https://commons.wikimedia.org/wiki/File:Felis_catus-cat_on_snow.jpg">Von.grzanka</a>'))
+
+# Write the TFRecord file
+image_labels = {
+    cat_in_snow : 0,
+    williamsburg_bridge : 1,
+}
+
+# This is an example, just using the cat image.
+image_string = open(cat_in_snow, 'rb').read()
+label = image_labels[cat_in_snow]
+
+# Create a dictionary with features that may be relevant.
+def image_example(image_string, label):
+    image_shape = tf.image.decode_jpeg(image_string).shape
+
+    feature = {
+        'height': _int64_feature(image_shape[0]),
+        'width': _int64_feature(image_shape[1]),
+        'depth': _int64_feature(image_shape[2]),
+        'label': _int64_feature(label),
+        'image_raw': _bytes_feature(image_string),
+    }
+
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+# for line in str(image_example(image_string, label)).split('\n')[:15]:
+#     print(line)
+# print('...')
+
+# Write the raw image files to `images.tfrecords`.
+# First, process the two images into `tf.Example` messages.
+# Then, write to a `.tfrecords` file.
+record_file = 'images.tfrecords'
+with tf.io.TFRecordWriter(record_file) as writer:
+    for filename, label in image_labels.items():
+        image_string = open(filename, 'rb').read()
+        tf_example = image_example(image_string, label)
+        writer.write(tf_example.SerializeToString())
+
+# Read the TFRecord file
+raw_image_dataset = tf.data.TFRecordDataset('images.tfrecords')
+
+# Create a dictionary describing the features.
+image_feature_description = {
+    'height': tf.io.FixedLenFeature([], tf.int64),
+    'width': tf.io.FixedLenFeature([], tf.int64),
+    'depth': tf.io.FixedLenFeature([], tf.int64),
+    'label': tf.io.FixedLenFeature([], tf.int64),
+    'image_raw': tf.io.FixedLenFeature([], tf.string),
+}
+
+def _parse_image_function(example_proto):
+    # Parse the input tf.Example proto using the dictionary above.
+    return tf.io.parse_single_example(example_proto, image_feature_description)
+
+parsed_image_dataset = raw_image_dataset.map(_parse_image_function)
+parsed_image_dataset
+
+# Recover image
+for image_features in parsed_image_dataset:
+    image_raw = image_features['image_raw'].numpy()
+    display.display(display.Image(data=image_raw))
