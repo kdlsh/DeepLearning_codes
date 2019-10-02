@@ -1,5 +1,5 @@
 
-# https://www.tensorflow.org/beta/guide/using_gpu
+# https://www.tensorflow.org/guide/using_gpu
 
 import os
 
