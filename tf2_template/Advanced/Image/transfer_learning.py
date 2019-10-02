@@ -1,5 +1,5 @@
 ## GTX1050 2G -> base model load OOM error, GTX1060 3G -> working
-# https://www.tensorflow.org/beta/tutorials/images/transfer_learning
+# https://www.tensorflow.org/tutorials/images/transfer_learning
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 

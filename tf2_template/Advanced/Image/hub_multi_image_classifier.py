@@ -1,4 +1,4 @@
-# https://www.tensorflow.org/beta/tutorials/images/hub_with_keras
+# https://www.tensorflow.org/tutorials/images/transfer_learning_with_hub
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
