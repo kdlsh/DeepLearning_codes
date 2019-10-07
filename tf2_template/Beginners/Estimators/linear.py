@@ -1,4 +1,4 @@
-# https://www.tensorflow.org/beta/tutorials/estimators/linear
+# https://www.tensorflow.org/tutorials/estimator/linear
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 

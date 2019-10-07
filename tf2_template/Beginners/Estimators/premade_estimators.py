@@ -1,4 +1,4 @@
-# https://www.tensorflow.org/beta/tutorials/estimators/premade_estimators
+# https://www.tensorflow.org/tutorials/estimator/premade
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -50,6 +50,10 @@ def input_fn(features, labels, training=True, batch_size=256):
 my_feature_columns = []
 for key in train.keys():
     my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+
+# tf.estimator.DNNClassifier for deep models that perform multi-class classification.
+# tf.estimator.DNNLinearCombinedClassifier for wide & deep models.
+# tf.estimator.LinearClassifier for classifiers based on linear models.
 
 # Build a DNN with 2 hidden layers with 30 and 10 hidden nodes each.
 classifier = tf.estimator.DNNClassifier(
