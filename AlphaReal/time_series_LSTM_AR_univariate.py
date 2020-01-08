@@ -14,18 +14,14 @@ import pandas as pd
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
-## The weather dataset
-# zip_path = tf.keras.utils.get_file(
-#     origin='https://storage.googleapis.com/tensorflow/tf-keras-datasets/jena_climate_2009_2016.csv.zip',
-#     fname='jena_climate_2009_2016.csv.zip', extract=True)
-# csv_path, _ = os.path.splitext(zip_path)
-csv_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\200107_SO_test.csv"
-df = pd.read_csv(csv_path)
+## The dataset
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\data.txt"
+#df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
+df = pd.read_csv(txt_path, sep='\t')
+print(df.head())
+df = df.drop(['Unsold','Completed','Starts'], axis=1)
 print(df.head())
 
-csv_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\200107_BS_test.csv"
-df2 = pd.read_csv(csv_path)
-print(df2.head())
 
 def univariate_data(dataset, start_index, end_index, history_size, target_size):
     data = []
@@ -42,9 +38,10 @@ def univariate_data(dataset, start_index, end_index, history_size, target_size):
         labels.append(dataset[i+target_size])
     return np.array(data), np.array(labels)
 
+
 ## fisrt 100 rows : training dataset, remaining : validation dataset
-TRAIN_SPLIT = 100
-tf.random.set_seed(13)
+TRAIN_SPLIT = 120
+tf.random.set_seed(10)
 
 ## Part 1: Forecast a univariate time series
 def build_train_val_data(df):
@@ -74,14 +71,31 @@ def build_train_val_data(df):
                                   
     return x_train_uni, y_train_uni, x_val_uni, y_val_uni
 
-x_train_uni, y_train_uni, x_val_uni, y_val_uni = build_train_val_data(df)
-x_train_uni2, y_train_uni2, x_val_uni2, y_val_uni2 = build_train_val_data(df2)
+x_train_uni_li = []
+y_train_uni_li = []
+x_val_uni_li = []
+y_val_uni_li = []
+for region in list(df['Reg'].drop_duplicates()):
+    region_df = df.loc[df['Reg'] == region]
+    x_t, y_t, x_v, y_v = build_train_val_data(region_df)
+    x_train_uni_li.append(x_t)
+    y_train_uni_li.append(y_t)
+    x_val_uni_li.append(x_v)
+    y_val_uni_li.append(y_v)
+
+x_train_uni = np.concatenate(x_train_uni_li, axis=0)
+y_train_uni = np.concatenate(y_train_uni_li, axis=0)
+x_val_uni = np.concatenate(x_val_uni_li, axis=0)
+y_val_uni = np.concatenate(y_val_uni_li, axis=0)
 
 print ('Single window of past history')
-#print (x_train_uni.shape)
+print (x_train_uni.shape)
 print (x_train_uni[0])
 print ('\n Target temperature to predict')
+print (y_train_uni.shape)
 print (y_train_uni[0])
+print (x_val_uni.shape)
+print (y_val_uni.shape)
 
 def create_time_steps(length):
     time_steps = []
@@ -110,18 +124,18 @@ def show_plot(plot_data, delta, title):
     plt.show()
     return plt
 
-show_plot([x_train_uni[0], y_train_uni[0]], 0, 'Sample Example')
+# show_plot([x_train_uni[0], y_train_uni[0]], 0, 'Sample Example')
 
 ## Baseline (mean)
 def baseline(history):
     return np.mean(history)
 
-show_plot([x_train_uni[0], y_train_uni[0], baseline(x_train_uni[0])], 0,
-           'Baseline Prediction Example')
+# show_plot([x_train_uni[0], y_train_uni[0], baseline(x_train_uni[0])], 0,
+#            'Baseline Prediction Example')
 
 ## Recurrent neural network
-BATCH_SIZE = 24
-BUFFER_SIZE = 100
+BATCH_SIZE = 96
+BUFFER_SIZE = 400
 
 train_univariate = tf.data.Dataset.from_tensor_slices((x_train_uni, y_train_uni))
 train_univariate = train_univariate.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
@@ -130,7 +144,7 @@ val_univariate = tf.data.Dataset.from_tensor_slices((x_val_uni, y_val_uni))
 val_univariate = val_univariate.batch(BATCH_SIZE).repeat()
 
 simple_lstm_model = tf.keras.models.Sequential([
-    tf.keras.layers.LSTM(8, input_shape=x_train_uni.shape[-2:]),
+    tf.keras.layers.LSTM(10, input_shape=x_train_uni.shape[-2:]),
     tf.keras.layers.Dense(1)
 ])
 
@@ -140,7 +154,7 @@ for x, y in val_univariate.take(1):
     print(simple_lstm_model.predict(x).shape)
 
 EVALUATION_INTERVAL = 200
-EPOCHS = 10
+EPOCHS = 30
 
 simple_lstm_model.fit(train_univariate, epochs=EPOCHS,
                       steps_per_epoch=EVALUATION_INTERVAL,
@@ -148,9 +162,9 @@ simple_lstm_model.fit(train_univariate, epochs=EPOCHS,
 
 
 ## Predict using the simple LSTM model
-for x, y in val_univariate.take(3):
-    plot = show_plot([x[0].numpy(), y[0].numpy(),
-                        simple_lstm_model.predict(x)[0]], 0, 'Simple LSTM model')
-    plot.show()
+# for x, y in val_univariate.take(3):
+#     plot = show_plot([x[0].numpy(), y[0].numpy(),
+#                         simple_lstm_model.predict(x)[0]], 0, 'Simple LSTM model')
+#     plot.show()
 
 
