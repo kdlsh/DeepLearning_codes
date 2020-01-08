@@ -1,0 +1,34 @@
+Correlation												
+Permits	1m	12m	18m	24m	30m	36m						
+MM	1m	3m	6m	9m	12m							
+												
+raw_data							raw_data					
+Reg	cat	T1	T2	T3	T4		Reg	cat	T1	T2	T3	T4
+S	MM	N	N	N	N		S	Perm	N1	N2	N3	N3
+B	MM	N	N	N	N		B	Perm	N1	N2	N3	N3
+G	MM	N	N	N	N		G	Perm	N1	N2	N3	N3
+												
+cumulative							cumulative					
+Reg	cat	T1	T2	T3			Reg	cat	T2	T3	T4	
+S	MM	T1/T3	T2/T4	T3/T5			S	Perm	N1+N2	N2+N3	N3+N4	
+B	MM	T1/T3	T2/T4	T3/T5			B	Perm	N1+N2	N2+N3	N3+N4	
+G	MM	T1/T3	T2/T4	T3/T5			G	Perm	N1+N2	N2+N3	N3+N4	
+												
+transposed							transposed					
+Reg	S	B	G				Reg	S	B	G		
+cat	MM	MM	MM				cat	Perm	Perm	Perm		
+T1	T1/T3	T1/T3	T1/T3				T2	N1+N2	N1+N2	N1+N2		
+T2	T2/T4	T2/T4	T2/T4				T3	N2+N3	N2+N3	N2+N3		
+T3	T3/T5	T3/T5	T3/T5				T4	N3+N4	N3+N4	N3+N4		
+												
+parsed							parsed					
+cat	MM	Reg					cat	Perm	Reg			
+T1	T1/T3	S					T2	N1+N2	S			
+T2	T2/T4	S					T3	N2+N3	S			
+T3	T3/T5	S					T4	N3+N4	S			
+T1	T1/T3	B					T2	N1+N2	B			
+T2	T2/T4	B					T3	N2+N3	B			
+T3	T3/T5	B					T4	N3+N4	B			
+T1	T1/T3	G					T2	N1+N2	G			
+T2	T2/T4	G					T3	N2+N3	G			
+T3	T3/T5	G					T4	N3+N4	G			
