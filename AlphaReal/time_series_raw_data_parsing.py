@@ -7,7 +7,7 @@ import numpy as np
 import os, sys, re
 import pandas as pd
 
-import seaborn as sns
+#import seaborn as sns
 import scipy.stats as stats
 #%matplotlib inline
 mpl.rcParams['figure.figsize'] = (8, 6)
@@ -19,11 +19,13 @@ mpl.rcParams['axes.grid'] = False
 #M_window_size = 3 # month
 ## int data type
 #p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Permits_raw.txt"
-p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Starts_raw.txt"
-#p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Completed_raw.txt"
+#p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Starts_raw.txt"
+p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Completed_raw.txt"
 ## index data type
 m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\MM_raw.txt"
 #m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\JS_raw.txt"
+## corr cutoff
+corr_cutoff = 0.4
 
 
 def preprocess_df(path):
@@ -92,9 +94,12 @@ def get_corr_merge_stack_df(P_window_size, M_window_size):
     df = df_merged_stack[['A','B']]
 
     overall_pearson_r = df.corr().iloc[0,1]
-    if abs(overall_pearson_r) > 0.05:
+    if abs(overall_pearson_r) > corr_cutoff:
         print(P_window_size, M_window_size)
         print(f"Pandas computed Pearson r: {overall_pearson_r}")
+
+    # print(P_window_size, M_window_size)
+    # print(f"Pandas computed Pearson r: {overall_pearson_r}")
 
     #r, p = stats.pearsonr(df.dropna()['Permits'], df.dropna()['MM'])
     #print(f"Scipy computed Pearson r: {r} and p-value: {p}")
