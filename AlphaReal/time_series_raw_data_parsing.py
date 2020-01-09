@@ -92,7 +92,7 @@ def get_corr_merge_stack_df(P_window_size, M_window_size):
     df = df_merged_stack[['A','B']]
 
     overall_pearson_r = df.corr().iloc[0,1]
-    if abs(overall_pearson_r) > 0.2:
+    if abs(overall_pearson_r) > 0.05:
         print(P_window_size, M_window_size)
         print(f"Pandas computed Pearson r: {overall_pearson_r}")
 
@@ -100,6 +100,6 @@ def get_corr_merge_stack_df(P_window_size, M_window_size):
     #print(f"Scipy computed Pearson r: {r} and p-value: {p}")
 
 
-for p in range(6,36): # month 6~36
+for p in range(1,36): # month 6~36
     for m in range(1,12): # month 1~12
         get_corr_merge_stack_df(p, m)
