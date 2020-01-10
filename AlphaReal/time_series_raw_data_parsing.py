@@ -22,8 +22,8 @@ mpl.rcParams['axes.grid'] = False
 #p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Starts_raw.txt"
 p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Completed_raw.txt"
 ## index data type
-m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\MM_raw.txt"
-#m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\JS_raw.txt"
+#m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\MM_raw.txt"
+m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\JS_raw.txt"
 ## corr cutoff
 corr_cutoff = 0.4
 
@@ -97,6 +97,7 @@ def get_corr_merge_stack_df(P_window_size, M_window_size):
     if abs(overall_pearson_r) > corr_cutoff:
         print(P_window_size, M_window_size)
         print(f"Pandas computed Pearson r: {overall_pearson_r}")
+        return [P_window_size, M_window_size, overall_pearson_r]
 
     # print(P_window_size, M_window_size)
     # print(f"Pandas computed Pearson r: {overall_pearson_r}")
@@ -104,7 +105,38 @@ def get_corr_merge_stack_df(P_window_size, M_window_size):
     #r, p = stats.pearsonr(df.dropna()['Permits'], df.dropna()['MM'])
     #print(f"Scipy computed Pearson r: {r} and p-value: {p}")
 
+def crosscorr(datax, datay, lag=0, wrap=False):
+    """ Lag-N cross correlation. 
+    Shifted data filled with NaNs 
+    
+    Parameters
+    ----------
+    lag : int, default 0
+    datax, datay : pandas.Series objects of equal length
 
-for p in range(1,36): # month 6~36
-    for m in range(1,12): # month 1~12
-        get_corr_merge_stack_df(p, m)
+    Returns
+    ----------
+    crosscorr : float
+    """
+    if wrap:
+        shiftedy = datay.shift(lag)
+        shiftedy.iloc[:lag] = datay.iloc[-lag:].values
+        return datax.corr(shiftedy)
+    else: 
+        return datax.corr(datay.shift(lag))
+
+
+p_corr_li_total = []
+for p in range(4,8): # month 6~36
+    for m in range(4,8): # month 1~12
+        p_corr_li = get_corr_merge_stack_df(p, m)
+        if p_corr_li != None:
+            p_corr_li_total.append(p_corr_li)
+
+p_corr_li_sorted = sorted(p_corr_li_total, key=lambda x:x[-1])
+print(p_corr_li_sorted[0])
+
+
+d1 = df['Permits']
+d2 = df['Starts']
+d3 = df['Completed']
