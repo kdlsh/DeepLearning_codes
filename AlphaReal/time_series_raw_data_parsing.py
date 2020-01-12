@@ -14,7 +14,6 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 ##############################To do#######################################
 # rate type data
 # window size per data
-#JS_ratio, morgage, MG update
 ##########################################################################
 
 ## parameter
@@ -29,20 +28,40 @@ path4 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Unsold_supply.t
 ## index data type
 path5 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MM_index.txt"
 path6 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JS_index.txt"
-path_li = [path1, path2, path3, path4, path5, path6]
+path7 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MG_index.txt"
+## percent type
+path8 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JSratio_percent.txt"
+## rate type
+path9 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_rate.txt"
+path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Interest_rate.txt"
+
+path_li = [path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
 
 
 def replace_reg_name(df):
-    df.rename(columns={'지역(1)':'Reg', '구  분(1)':'Reg', '구분(1)':'Reg'}, inplace=True)
-    df['Reg'].replace({'전국':'Total', '수도권':'Cap', '서울':'SO', '경기':'GG', '인천':'IC',
-                    '부산':'BS', '대구':'DG', '광주':'GJ', '대전':'DJ', '울산':'US',
-                    '세종':'SJ', '강원':'GW', '충북':'CB', '충남':'CN', '전북':'JB',
-                    '전남':'JN', '경북':'GB', '경남':'GN', '제주':'JJ', '계':'Total',
-                    '수도권소계':'Cap'}, inplace =True)
+    df.rename(columns={'지역(1)':'Reg', '지역':'Reg',
+                       '구  분(1)':'Reg', '구분(1)':'Reg', 
+                       '시도별(2)':'Reg'}, inplace=True)
+    df['Reg'].replace({'전국':'Total', '소계':'Total', '계':'Total',
+                    '수도권':'Cap', '수도권소계':'Cap',
+                    '서울':'SO', '서울특별시':'SO',
+                    '인천':'IC', '인천광역시':'IC',
+                    '부산':'BS', '부산광역시':'BS',
+                    '대구':'DG', '대구광역시':'DG',
+                    '광주':'GJ', '광주광역시':'GJ',
+                    '대전':'DJ', '대전광역시':'DJ',
+                    '울산':'US', '울산광역시':'US',
+                    '세종':'SJ', '세종특별자치시':'SJ',
+                    '강원':'GW', '강원도':'GW', '경기':'GG', '경기도':'GG',
+                    '충북':'CB', '충청북도':'CB', '충남':'CN', '충청남도':'CN',
+                    '전북':'JB', '전라북도':'JB', '전남':'JN', '전라남도':'JN',
+                    '경북':'GB', '경상북도':'GB', '경남':'GN', '경상남도':'GN',
+                    '제주':'JJ', '제주도':'JJ', '제주특별자치도':'JJ', '제주특별자치시도':'JJ'
+                    }, inplace =True)
     return df
 
 def preprocess_df(path):
-    df = pd.read_csv(path, sep='\t')
+    df = pd.read_csv(path, sep='\t', dtype=str)
     df = replace_reg_name(df)
     df = df.set_index('Reg').T #transpose
     if df['SO'].str.contains(',').any():    
@@ -84,6 +103,10 @@ def build_merged_df(path_li, norm_flag, roll_flag):
             elif data_type == "index": # apply div
                 df_roll = df_pre.rolling(Price_Window_Size, center=True).apply(lambda x: div_func(x)).dropna()
                 #df_roll = df_pre.rolling(Price_Window_Size).apply(lambda x: div_func(x)).dropna()
+            elif data_type == "percent":
+                df_roll = df_pre
+            elif data_type == "rate":
+                df_roll = df_pre
             else:
                 sys.stderr.write('ERROR!! check raw data filename.\n')
                 sys.exit
@@ -92,7 +115,7 @@ def build_merged_df(path_li, norm_flag, roll_flag):
             df_roll_list.append(df_pre)
 
     ## add suffix
-    suffix_list = get_suffix_list(header_list)    
+    suffix_list = get_suffix_list(header_list)
     for i in range(len(df_roll_list)):
         df_roll_list[i] = df_roll_list[i].add_suffix(suffix_list[i])
         df_roll_list[i]['Date Time'] = df_roll_list[i].index
