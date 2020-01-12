@@ -15,11 +15,12 @@ mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 ## The dataset
-txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\data.txt"
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
-df = pd.read_csv(txt_path, sep='\t')
+df = pd.read_csv(txt_path)
 print(df.head())
 df = df.drop(['Unsold','Completed','Starts'], axis=1)
+df = df.dropna()
 print(df.head())
 
 
@@ -45,7 +46,7 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 
 
 ## fisrt 100 rows : training dataset, remaining : validation dataset
-TRAIN_SPLIT = 120
+TRAIN_SPLIT = 110
 tf.random.set_seed(13)
 
 ## Forecast a multivariate time series
@@ -62,11 +63,11 @@ def build_single_step_train_val_data(df):
     data_mean = dataset.mean(axis=0)
     data_std = dataset.std(axis=0)
 
-    dataset = (dataset-data_mean)/data_std
+    #dataset = (dataset-data_mean)/data_std
 
     ## Single step model
-    past_history = 24
-    future_target = 6
+    past_history = 6 #6
+    future_target = 2 #4
     STEP = 1
 
     x_train_single, y_train_single = multivariate_data(dataset, dataset[:, 1], 0,
@@ -127,7 +128,7 @@ single_step_model.compile(optimizer=tf.keras.optimizers.RMSprop(), loss='mae')
 for x, y in val_data_single.take(1):
     print(single_step_model.predict(x).shape)
 
-EVALUATION_INTERVAL = 200
+EVALUATION_INTERVAL = 100
 EPOCHS = 30
 
 single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
@@ -179,7 +180,7 @@ def plot_train_history(history, title):
 
 plot_train_history(single_step_history, 'Single Step Training and validation loss')
 
-## Predict a single step future
+# # Predict a single step future
 # for x, y in val_data_single.take(3):
 #     plot = show_plot([x[0][:, 1].numpy(), y[0].numpy(),
 #                         single_step_model.predict(x)[0]], 12,

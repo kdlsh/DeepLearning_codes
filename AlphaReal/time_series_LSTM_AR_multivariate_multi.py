@@ -15,11 +15,12 @@ mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 ## The dataset
-txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\data.txt"
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
-df = pd.read_csv(txt_path, sep='\t')
+df = pd.read_csv(txt_path)
 print(df.head())
 df = df.drop(['Unsold','Completed','Starts'], axis=1)
+df = df.dropna()
 print(df.head())
 
 
@@ -45,11 +46,11 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 
 
 ## fisrt 100 rows : training dataset, remaining : validation dataset
-TRAIN_SPLIT = 130
+TRAIN_SPLIT = 110
 tf.random.set_seed(10)
 
-past_history = 24
-future_target = 12
+past_history = 12  #24
+future_target = 3 #12
 STEP = 1
 
 ## Multi-Step model (predict a sequence of the future)
@@ -66,7 +67,7 @@ def build_multi_step_train_val_data(df):
     data_mean = dataset.mean(axis=0)
     data_std = dataset.std(axis=0)
 
-    dataset = (dataset-data_mean)/data_std
+    #dataset = (dataset-data_mean)/data_std
 
     # past_history = 24
     # future_target = 6
@@ -107,7 +108,7 @@ print ('\n Target temperature to predict : {}'.format(y_train_multi[0].shape))
 
 
 ## Recurrent neural network
-BATCH_SIZE = 144
+BATCH_SIZE = 192
 BUFFER_SIZE = 500
 
 train_data_multi = tf.data.Dataset.from_tensor_slices((x_train_multi, y_train_multi))
@@ -189,7 +190,7 @@ for x, y in val_data_multi.take(1):
     print (multi_step_model.predict(x).shape)
 
 EVALUATION_INTERVAL = 100
-EPOCHS = 30
+EPOCHS = 20
 
 multi_step_history = multi_step_model.fit(train_data_multi, epochs=EPOCHS,
                                           steps_per_epoch=EVALUATION_INTERVAL,
@@ -198,7 +199,7 @@ multi_step_history = multi_step_model.fit(train_data_multi, epochs=EPOCHS,
                                     
 plot_train_history(multi_step_history, 'Multi-Step Training and validation loss')
 
-for x, y in val_data_multi.take(3):
+for x, y in val_data_multi.take(5):
     multi_step_plot(x[0], y[0], multi_step_model.predict(x)[0])
 
 ## Time series windowing

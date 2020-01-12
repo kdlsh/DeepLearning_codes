@@ -6,137 +6,134 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, sys, re
 import pandas as pd
-
-#import seaborn as sns
 import scipy.stats as stats
-#%matplotlib inline
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
+from functools import reduce
 
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+##############################To do#######################################
+# rate type data
+# window size per data
+#JS_ratio, morgage, MG update
+##########################################################################
 
 ## parameter
-#P_window_size = 12 # month
-#M_window_size = 3 # month
-## int data type
-#p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Permits_raw.txt"
-#p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Starts_raw.txt"
-p_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\Completed_raw.txt"
-## index data type
-#m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\MM_raw.txt"
-m_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\JS_raw.txt"
-## corr cutoff
-corr_cutoff = 0.4
+Supply_Window_Size = 24 # month
+Price_Window_Size = 12 # month
 
+## supply int data type
+path1 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Permits_supply.txt"
+path2 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Starts_supply.txt"
+path3 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Completed_supply.txt"
+path4 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Unsold_supply.txt"
+## index data type
+path5 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MM_index.txt"
+path6 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JS_index.txt"
+path_li = [path1, path2, path3, path4, path5, path6]
+
+
+def replace_reg_name(df):
+    df.rename(columns={'지역(1)':'Reg', '구  분(1)':'Reg', '구분(1)':'Reg'}, inplace=True)
+    df['Reg'].replace({'전국':'Total', '수도권':'Cap', '서울':'SO', '경기':'GG', '인천':'IC',
+                    '부산':'BS', '대구':'DG', '광주':'GJ', '대전':'DJ', '울산':'US',
+                    '세종':'SJ', '강원':'GW', '충북':'CB', '충남':'CN', '전북':'JB',
+                    '전남':'JN', '경북':'GB', '경남':'GN', '제주':'JJ', '계':'Total',
+                    '수도권소계':'Cap'}, inplace =True)
+    return df
 
 def preprocess_df(path):
-    ## The permits dataset
-    txt_path = path
-    df = pd.read_csv(txt_path, sep='\t')
-
-    ## Preprocessing
+    df = pd.read_csv(path, sep='\t')
+    df = replace_reg_name(df)
     df = df.set_index('Reg').T #transpose
-    df = df.drop(['SJ', 'Cap', 'Total'], axis=1, errors='ignore') #drop column
-    if df.isin([',']).any().any():
+    if df['SO'].str.contains(',').any():    
         df = df.applymap(lambda x: x.replace(',', ''))
     if df.isin(['-']).any().any():
         df.replace({'-': None}, inplace =True)
+    df = df.drop(['SJ', 'Cap', 'Total'], axis=1, errors='ignore') #drop column
     df = df.dropna()
     df = df.apply(pd.to_numeric)
-    df.describe()
     return df
 
-def build_MM_df(path):
-    ## The MM dataset
-    txt_path = path
-    df = pd.read_csv(txt_path, sep='\t')
-
-    ## Preprocessing
-    df = df.set_index('Reg').T #transpose
-    df = df.drop(['SJ', 'Cap', 'Total'], axis=1, errors='ignore') #drop column
-    df = df.apply(pd.to_numeric)
-    df.describe()
+def supply_normalize(df):
+    df = df.apply(lambda x : (x - x.mean())/x.mean())
     return df
 
 def div_func(array):
     return ((array[-1]/array[0])-1)*100
 
-def get_corr_merge_stack_df(P_window_size, M_window_size):
-    ## window rolling sum
-    #df_p = build_permit_df(p_path)
-    df_p = preprocess_df(p_path)
-    df_permit = df_p.rolling(P_window_size).sum().dropna()
+def get_suffix_list(header_list):
+    suffix_list = list(map(lambda x: '_'+x, header_list))
+    return suffix_list
 
-    ## window rolling apply div
-    #df_m = build_MM_df(m_path)
-    df_m = preprocess_df(m_path)   
-    df_MM = df_m.rolling(M_window_size, center=True).apply(lambda x: div_func(x)).dropna()
+def build_merged_df(path_li, norm_flag, roll_flag):
+    df_roll_list = []
+    header_list = []
+    for path in path_li:
+        prefix, data_type = os.path.basename(path).split('.')[0].split('_')
+        header_list.append(prefix)
 
-    ## merge dataframe
-    df_MM['Date Time'] = df_MM.index
-    df_permit['Date Time'] = df_permit.index
-    df_merged = pd.merge(df_MM, df_permit, on='Date Time', suffixes=('_A','_B'))
-    df_merged.index = df_merged['Date Time']
-    #return df_merged
+        ## preprocessing
+        df_pre = preprocess_df(path)
+        if norm_flag and data_type == "supply":
+            df_pre = supply_normalize(df_pre)
 
+        ## window rolling
+        if roll_flag:
+            if data_type == "supply": # sum
+                df_roll = df_pre.rolling(Supply_Window_Size).sum().dropna()
+            elif data_type == "index": # apply div
+                df_roll = df_pre.rolling(Price_Window_Size, center=True).apply(lambda x: div_func(x)).dropna()
+                #df_roll = df_pre.rolling(Price_Window_Size).apply(lambda x: div_func(x)).dropna()
+            else:
+                sys.stderr.write('ERROR!! check raw data filename.\n')
+                sys.exit
+            df_roll_list.append(df_roll)
+        else:
+            df_roll_list.append(df_pre)
+
+    ## add suffix
+    suffix_list = get_suffix_list(header_list)    
+    for i in range(len(df_roll_list)):
+        df_roll_list[i] = df_roll_list[i].add_suffix(suffix_list[i])
+        df_roll_list[i]['Date Time'] = df_roll_list[i].index
+
+    ## save merged dataframes
+    df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time', how='outer'), df_roll_list)
+    #df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time'), df_roll_list)
+    df_final.index = df_final['Date Time']
+    df_final = df_final.drop(columns=['Date Time'])
+
+    df_final.to_csv("merged_data.csv", mode='w')
+    return df_final, header_list
+
+def build_stacked_df(df_merged, header_list):
     ## stack merged dataframe
-    df_ = pd.DataFrame(index=['0', '1'], columns=['A', 'B'])
+    df_ = pd.DataFrame(index=['0', '1'], columns=header_list)
     df_ = df_.fillna(np.NaN)
-    df_
 
-    for reg in list(df_p.columns):
-        reg_A = reg+"_A"
-        reg_B = reg+"_B"   
-        merged_reg = pd.merge(df_merged[reg_A], df_merged[reg_B], left_index=True, right_index=True)    
-        df_ = pd.concat([df_,merged_reg.rename(columns={reg_A:'A', reg_B:'B'})])
-    df_merged_stack = df_.dropna()
+    reg_list = list(map(lambda x:x.split('_')[0], list(df_merged.columns)))
+    lookup = set()  # a temporary lookup set
+    reg_list = [x for x in reg_list if x not in lookup and lookup.add(x) is None]
 
-    ## Pearson correlation
-    df = df_merged_stack[['A','B']]
+    suffix_list = get_suffix_list(header_list)
+    for reg in reg_list:
+        col_name_list = list(map(lambda x: reg+x, suffix_list))
+        df_reg = df_merged[col_name_list]
+        df_reg['Reg'] = reg
 
-    overall_pearson_r = df.corr().iloc[0,1]
-    if abs(overall_pearson_r) > corr_cutoff:
-        print(P_window_size, M_window_size)
-        print(f"Pandas computed Pearson r: {overall_pearson_r}")
-        return [P_window_size, M_window_size, overall_pearson_r]
-
-    # print(P_window_size, M_window_size)
-    # print(f"Pandas computed Pearson r: {overall_pearson_r}")
-
-    #r, p = stats.pearsonr(df.dropna()['Permits'], df.dropna()['MM'])
-    #print(f"Scipy computed Pearson r: {r} and p-value: {p}")
-
-def crosscorr(datax, datay, lag=0, wrap=False):
-    """ Lag-N cross correlation. 
-    Shifted data filled with NaNs 
-    
-    Parameters
-    ----------
-    lag : int, default 0
-    datax, datay : pandas.Series objects of equal length
-
-    Returns
-    ----------
-    crosscorr : float
-    """
-    if wrap:
-        shiftedy = datay.shift(lag)
-        shiftedy.iloc[:lag] = datay.iloc[-lag:].values
-        return datax.corr(shiftedy)
-    else: 
-        return datax.corr(datay.shift(lag))
+        rename_dic = dict(zip(col_name_list, header_list))
+        df_ = pd.concat([df_, df_reg.rename(columns=rename_dic)])
+    #df_ = df_.dropna()
+    df_ = df_.drop(['0', '1'])
+    df_ = df_[header_list+['Reg']]
+    df_.index.name = 'Date Time'
+    df_.to_csv("stacked_data.csv", mode='w')
+    return df_
 
 
-p_corr_li_total = []
-for p in range(4,8): # month 6~36
-    for m in range(4,8): # month 1~12
-        p_corr_li = get_corr_merge_stack_df(p, m)
-        if p_corr_li != None:
-            p_corr_li_total.append(p_corr_li)
-
-p_corr_li_sorted = sorted(p_corr_li_total, key=lambda x:x[-1])
-print(p_corr_li_sorted[0])
+df_merged, header_list = build_merged_df(path_li, True, True) #norm_flag, roll_flag
+#df_merged, header_list = build_merged_df(path_li, False, False) #norm_flag, roll_flag
+df_stack = build_stacked_df(df_merged, header_list)
 
 
-d1 = df['Permits']
-d2 = df['Starts']
-d3 = df['Completed']
+
