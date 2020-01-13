@@ -6,7 +6,7 @@ import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+import os, sys, re
 import pandas as pd
 
 # os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -19,7 +19,7 @@ txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
 df = pd.read_csv(txt_path)
 print(df.head())
-df = df.drop(['Unsold','Completed','Starts'], axis=1)
+df = df.drop(['Unsold','Completed','Starts','JSratio','JW'], axis=1)
 df = df.dropna()
 print(df.head())
 
@@ -50,12 +50,13 @@ TRAIN_SPLIT = 110
 tf.random.set_seed(10)
 
 past_history = 12  #24
-future_target = 3 #12
+future_target = 6 #12
 STEP = 1
 
 ## Multi-Step model (predict a sequence of the future)
 def build_multi_step_train_val_data(df):
     features_considered = ['JS', 'MM', 'Permits']
+    #features_considered = ['MM', 'Permits']
 
     features = df[features_considered]
     features.index = df['Date Time']
@@ -72,6 +73,7 @@ def build_multi_step_train_val_data(df):
     # past_history = 24
     # future_target = 6
     # STEP = 1
+    # dataset[:, 1] -> y_train_multi
     
     x_train_multi, y_train_multi = multivariate_data(dataset, dataset[:, 1], 0,
                                                     TRAIN_SPLIT, past_history,
@@ -189,8 +191,8 @@ multi_step_model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), l
 for x, y in val_data_multi.take(1):
     print (multi_step_model.predict(x).shape)
 
-EVALUATION_INTERVAL = 100
-EPOCHS = 20
+EVALUATION_INTERVAL = 150
+EPOCHS = 15
 
 multi_step_history = multi_step_model.fit(train_data_multi, epochs=EPOCHS,
                                           steps_per_epoch=EVALUATION_INTERVAL,
