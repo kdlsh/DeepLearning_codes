@@ -212,12 +212,12 @@ if __name__ == "__main__":
     #build_merged_and_stacked_total_table()
 
     ## Build two category pearson correlation table
-    # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6) #[1, 1, 0.8871]
-    # build_pair_corr_table('MM', 1, 24, 'MG', 1, 24, 0.4) #[1, 1, 0.8622]
+    build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6) #[1, 1, 0.8871]
+    build_pair_corr_table('MM', 1, 24, 'MG', 1, 24, 0.4) #[1, 1, 0.8622]
     build_pair_corr_table('MM', 1, 48, 'Unsold', 1, 42, 0.4) #[1, 29, -0.7003]
     build_pair_corr_table('MM', 1, 48, 'Permits', 1, 42, 0.4) #[23, 38, -0.5004]
     build_pair_corr_table('MM', 1, 48, 'Starts', 1, 42, 0.4) #[23, 41, -0.5468]
-    # build_pair_corr_table('MM', 1, 24, 'Completed', 1, 42, 0.4) #[18, 14, -0.5372]
-    # build_pair_corr_table('JS', 1, 24, 'Completed', 1, 42, 0.4) #[18, 15, -0.6938]
-    # build_pair_corr_table('MM', 1, 36, 'Interest', 1, 24, 0.2) #[1, 1, -0.6553]
-    # build_pair_corr_table('MM', 1, 24, 'Stock', 1, 24, 0.3) #[1, 1, 0.7664]
+    build_pair_corr_table('MM', 1, 24, 'Completed', 1, 42, 0.4) #[18, 14, -0.5372]
+    build_pair_corr_table('JS', 1, 24, 'Completed', 1, 42, 0.4) #[18, 15, -0.6938]
+    build_pair_corr_table('MM', 1, 36, 'Interest', 1, 24, 0.2) #[1, 1, -0.6553]
+    build_pair_corr_table('MM', 1, 24, 'Stock', 1, 24, 0.3) #[1, 1, 0.7664]
