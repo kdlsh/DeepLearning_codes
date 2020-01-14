@@ -161,12 +161,23 @@ def build_stacked_df(df_merged, header_list, save_flag):
         df_.to_csv("stacked_data.csv", mode='w')
     return df_
 
-def pair_data_config(path_li, window_li, norm_flag_li, cat1, win1, cat2, win2):
+def pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2):
     cat1_indice = [i for i, s in enumerate(path_li) if cat1 in s][0]
     cat2_indice = [i for i, s in enumerate(path_li) if cat2 in s][0]
     path_li = [path_li[cat1_indice], path_li[cat2_indice]]
     window_li = [win1, win2]
     norm_flag_li = [norm_flag_li[cat1_indice], norm_flag_li[cat2_indice]]
+    return path_li, window_li, norm_flag_li
+
+def multi_data_config(path_li, norm_flag_li, cat_list, win_list):
+    cat_indice_list = []
+    for cat in cat_list:
+        for i, s in enumerate(path_li):
+            if (cat+'_') in s:
+                cat_indice_list.append(i)
+    path_li = [path_li[i] for i in cat_indice_list]
+    window_li = win_list
+    norm_flag_li = [norm_flag_li[i] for i in cat_indice_list]
     return path_li, window_li, norm_flag_li
 
 def build_merged_and_stacked_total_table():
@@ -201,10 +212,6 @@ def build_pair_corr_table(cat1, start1, end1, cat2, start2, end2, corr_cutoff):
 def plot_pair_pearson_corr(df, cat1, cat2, filename_prefix):
     df = df.dropna()
     overall_pearson_r = df.corr().iloc[0,1]    
-    # f,ax=plt.subplots(figsize=(14,4))
-    # df.rolling(window=1,center=True).median().plot(ax=ax)
-    # ax.set(xlabel='Date',ylabel='Rate',title=f"Overall Pearson r = {np.round(overall_pearson_r,2)}");    
-    # f.savefig(filename_prefix+'.png')
 
     ## Rolling correlation
     ROLLING_WINDOW_SIZE = 6
@@ -273,15 +280,14 @@ def plot_pair_corr(df, cat1, cat2, filename_prefix):
     df_interpolated = df.interpolate()
     # Compute rolling window synchrony
     rolling_r = df_interpolated[cat1].rolling(window=r_window_size, center=True).corr(df_interpolated[cat2])
-    f,ax=plt.subplots(3,1,figsize=(14,10),sharex=False)
+    f,ax=plt.subplots(3,1,figsize=(14,12),sharex=False)
     df.rolling(window=ROLLING_WINDOW_SIZE,center=True).median().plot(ax=ax[0])
     ax[0].set(xlabel='Date',ylabel='Rate')
     ax[0].axhline(0, color='r', linewidth=1)
     rolling_r.plot(ax=ax[1])
     ax[1].set(xlabel='Date',ylabel='Pearson r')
     overall_corr = f"(Overall Pearson r = {np.round(overall_pearson_r,2)})"
-    #plt.suptitle("Rate data and rolling window correlation " +overall_corr)
-    plt.suptitle(filename_prefix+' '+overall_corr+'\n', y=1.05)
+    plt.suptitle(filename_prefix+' '+overall_corr)
     
     ## Time lagged cross correlation
     d1 = df[cat1]
@@ -298,13 +304,14 @@ def plot_pair_corr(df, cat1, cat2, filename_prefix):
     ax[2].set(title=f'Offset = {offset} Dates',ylim=[-.81,.81],xlim=[0,seconds*fps*2], xlabel='Offset',ylabel='Pearson r')
     ax[2].set_xticklabels([int(item-seconds*fps) for item in ax[2].get_xticks()])
     plt.legend()
-    plt.tight_layout() 
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.95)
     f.savefig(filename_prefix+'.png')
     print(filename_prefix, offset)
 
 def plot_total_pair_corr(cat1, win1, cat2, win2):
     path_li, window_li, norm_flag_li = config()
-    path_li, window_li, norm_flag_li = pair_data_config(path_li, window_li, norm_flag_li, cat1, win1, cat2, win2)
+    path_li, window_li, norm_flag_li = pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2)
     df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
     filename_prefix = '_'.join([cat1, str(win1), cat2, str(win2)])
@@ -312,9 +319,24 @@ def plot_total_pair_corr(cat1, win1, cat2, win2):
     # plot_pair_lagged_corr(df_stack, cat1, cat2, filename_prefix)
     plot_pair_corr(df_stack, cat1, cat2, filename_prefix)
 
+def plot_total_multi_corr(cat_list, win_list):
+    path_li, window_li, norm_flag_li = config()
+    path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, cat_list, win_list)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_stack = build_stacked_df(df_merged, header_list, False)
+    filename_prefix = '_'.join(cat_list + list(map(str, win_list)))
+    
+    df = df_stack.dropna()
+    overall_pearson_r = df.corr() 
+    f,ax=plt.subplots(figsize=(14,5))
+    df.rolling(window=3,center=True).median().plot(ax=ax)
+    ax.set(xlabel='Date',ylabel='Rate',title=f"Overall Pearson r = {np.round(overall_pearson_r,2)}")
+    f.subplots_adjust(top=0.80)
+    f.savefig(filename_prefix+'.png')
+
 def plot_per_reg_pair_corr(cat1, win1, cat2, win2):
     path_li, window_li, norm_flag_li = config()
-    path_li, window_li, norm_flag_li = pair_data_config(path_li, window_li, norm_flag_li, cat1, win1, cat2, win2)
+    path_li, window_li, norm_flag_li = pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2)
     df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
 
@@ -324,6 +346,25 @@ def plot_per_reg_pair_corr(cat1, win1, cat2, win2):
         # plot_pair_pearson_corr(region_df, cat1, cat2, filename_prefix)
         # plot_pair_lagged_corr(region_df, cat1, cat2, filename_prefix)
         plot_pair_corr(region_df, cat1, cat2, filename_prefix)
+
+def plot_per_reg_multi_corr(cat_list, win_list):
+    path_li, window_li, norm_flag_li = config()
+    path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, cat_list, win_list)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_stack = build_stacked_df(df_merged, header_list, False)
+
+    for region in list(df_stack['Reg'].drop_duplicates()):
+        region_df = df_stack.loc[df_stack['Reg'] == region]
+        filename_prefix = '_'.join(cat_list + list(map(str, win_list))+[region])
+    
+        df = region_df.dropna()
+        overall_pearson_r = df.corr()
+        f,ax=plt.subplots(figsize=(14,5))
+        df.rolling(window=3,center=True).median().plot(ax=ax)
+        ax.set(xlabel='Date',ylabel='Rate',title=f"Overall Pearson r = {np.round(overall_pearson_r,2)}")
+        f.subplots_adjust(top=0.80)
+        f.savefig(filename_prefix+'.png')
+
 
 
 if __name__ == "__main__":
@@ -350,3 +391,14 @@ if __name__ == "__main__":
     # plot_per_reg_pair_corr('MM', 3, 'JS', 3)
     # plot_total_pair_corr('MM', 3, 'Unsold', 1)
     # plot_per_reg_pair_corr('MM', 3, 'Unsold', 1)
+    # plot_total_pair_corr('MM', 12, 'Permits', 24)
+    # plot_per_reg_pair_corr('MM', 12, 'Permits', 24)
+    # plot_per_reg_pair_corr('MM', 12, 'Interest', 12)
+
+    ## Multi category plot
+    # plot_total_multi_corr(['Permits','Starts','Completed'], [12,12,12])
+    # plot_per_reg_multi_corr(['Permits','Starts','Completed'], [12,12,12])
+    # plot_per_reg_multi_corr(['MM','MG','Stock'], [12,12,12])
+
+    ## Multi region plot
+    
