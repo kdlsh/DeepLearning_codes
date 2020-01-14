@@ -281,7 +281,7 @@ def plot_pair_corr(df, cat1, cat2, filename_prefix):
     ax[1].set(xlabel='Date',ylabel='Pearson r')
     overall_corr = f"(Overall Pearson r = {np.round(overall_pearson_r,2)})"
     #plt.suptitle("Rate data and rolling window correlation " +overall_corr)
-    plt.suptitle(filename_prefix+' '+overall_corr)
+    plt.suptitle(filename_prefix+' '+overall_corr+'\n', y=1.05)
     
     ## Time lagged cross correlation
     d1 = df[cat1]
