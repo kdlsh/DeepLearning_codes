@@ -365,6 +365,13 @@ def plot_per_reg_multi_corr(cat_list, win_list):
         f.subplots_adjust(top=0.80)
         f.savefig(filename_prefix+'.png')
 
+############################################################
+def plot_multi_reg(cat, win, reg_list):
+    path_li, window_li, norm_flag_li = config()
+    path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, [cat], [win])
+    
+############################################################
+
 
 
 if __name__ == "__main__":
@@ -394,11 +401,19 @@ if __name__ == "__main__":
     # plot_total_pair_corr('MM', 12, 'Permits', 24)
     # plot_per_reg_pair_corr('MM', 12, 'Permits', 24)
     # plot_per_reg_pair_corr('MM', 12, 'Interest', 12)
+    # plot_per_reg_pair_corr('JS', 12, 'Completed', 12)
 
     ## Multi category plot
     # plot_total_multi_corr(['Permits','Starts','Completed'], [12,12,12])
     # plot_per_reg_multi_corr(['Permits','Starts','Completed'], [12,12,12])
     # plot_per_reg_multi_corr(['MM','MG','Stock'], [12,12,12])
 
+    ############################################################
     ## Multi region plot
+    plot_multi_reg('Permits', 12, ['BS','GN'])
+    ############################################################
+
+    ##############################
+    # add total, cap region
+    ##############################
     
