@@ -168,7 +168,9 @@ def multi_step_plot(history, true_future, prediction):
     plt.show()
 
 for x, y in train_data_multi.take(1):
+    print(x[0])
     multi_step_plot(x[0], y[0], np.array([0]))
+    sys.exit()
 
 multi_step_model = tf.keras.models.Sequential()
 multi_step_model.add(tf.keras.layers.LSTM(12,
@@ -183,7 +185,7 @@ for x, y in val_data_multi.take(1):
     print (multi_step_model.predict(x).shape)
 
 EVALUATION_INTERVAL = 150
-EPOCHS = 20
+EPOCHS = 25
 
 multi_step_history = multi_step_model.fit(train_data_multi, epochs=EPOCHS,
                                           steps_per_epoch=EVALUATION_INTERVAL,

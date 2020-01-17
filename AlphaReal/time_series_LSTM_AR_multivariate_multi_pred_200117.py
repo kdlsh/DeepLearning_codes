@@ -14,7 +14,6 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
-
 ## Parameters
 past_history = 6  #24
 future_target = 0
@@ -23,18 +22,7 @@ STEP = 1
 ## The dataset
 txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
 df = pd.read_csv(txt_path)
-print(df.head())
-df = df.drop(['Unsold','Completed','Starts','JSratio','JW'], axis=1)
-df = df.dropna()
-print(df.head())
-
-
-########################TO DO#############################
-# 2. build per region latest dataset
-# 3. feed latest data to prediction model
-# 4. plot multi_step_latest_plot
-# 5. 3 or 5 category
-##########################################################
+features_li = ['JS', 'MM', 'Permits']
 
 ## Load prediction model
 model = tf.keras.models.load_model('multi_step_model_6_6.h5')
@@ -45,7 +33,6 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
                       target_size, step, single_step=False):
     data = []
     labels = []
-
     start_index = start_index + history_size
     if end_index is None:
         end_index = len(dataset) - target_size +1
@@ -53,19 +40,17 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
     for i in range(start_index, end_index):
         indices = range(i-history_size, i, step)
         data.append(dataset[indices])
-
         if single_step:
             labels.append(target[i+target_size])
         else:
             labels.append(target[i:i+target_size])
-
     return np.array(data), np.array(labels)
 
-def build_multi_step_train_val_data(df):
+def build_multi_step_train_val_data(df, features_li):
 
-    features_considered = ['JS', 'MM', 'Permits']
-    features = df[features_considered]
+    features = df[features_li]
     features.index = df['Date Time']
+    features = features.dropna()
 
     dataset = features.values
     data_mean = dataset.mean(axis=0)
@@ -78,10 +63,28 @@ def build_multi_step_train_val_data(df):
                                                 future_target, STEP)                                            
     return x_val_multi, y_val_multi
 
+def create_time_steps(length):
+    time_steps = []
+    for i in range(-length, 0, 1):
+        time_steps.append(i)
+    return time_steps
 
+def multi_step_pred_plot(history, prediction):
+    plt.figure(figsize=(12, 6))
+    num_in = create_time_steps(len(history))
+    num_out = len(prediction)
+
+    plt.plot(num_in, np.array(history[:, 1]), label='History')
+    plt.plot(np.arange(num_out)/STEP, np.array(prediction), 'ro',
+            label='Predicted Future') #'bo', 'ro'
+    plt.legend(loc='upper left')
+    plt.show()
+
+
+## Build per region latest dataset
 for region in list(df['Reg'].drop_duplicates()):
     region_df = df.loc[df['Reg'] == region]
-    x_val_multi, y_val_multi = build_multi_step_train_val_data(region_df)
+    x_val_multi, y_val_multi = build_multi_step_train_val_data(region_df, features_li)
 
     val_data_multi = tf.data.Dataset.from_tensor_slices((x_val_multi, y_val_multi))
     val_data_num = len(y_val_multi)
@@ -91,8 +94,13 @@ for region in list(df['Reg'].drop_duplicates()):
     for x, y in val_data_multi.take(val_data_num):
         final_x, final_y = x, y
     
+    ## Feed latest data to model, plot multi_step_prediction 
     print(region)
-    print(final_x)
-    print(final_y)
-    print(model.predict(final_x).shape)
+    prediction = model.predict(final_x)
+    multi_step_pred_plot(final_x[0], prediction[0])
     sys.exit()
+
+    ########################TO DO#############################
+    # 1. parse to real change rate and price index
+    # 2. 3 or 5 category
+    ##########################################################
