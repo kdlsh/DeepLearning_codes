@@ -9,7 +9,7 @@ import numpy as np
 import os, sys, re
 import pandas as pd
 
-# os.chdir(os.path.dirname(os.path.realpath(__file__)))
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
@@ -18,7 +18,6 @@ mpl.rcParams['axes.grid'] = False
 txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
 df = pd.read_csv(txt_path)
-print(df.head())
 df = df.drop(['Unsold','Completed','Starts','JSratio','JW'], axis=1)
 df = df.dropna()
 print(df.head())
@@ -49,7 +48,7 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 TRAIN_SPLIT = 110
 tf.random.set_seed(10)
 
-past_history = 12  #24
+past_history = 6  #24
 future_target = 6 #12
 STEP = 1
 
@@ -57,24 +56,16 @@ STEP = 1
 def build_multi_step_train_val_data(df):
     features_considered = ['JS', 'MM', 'Permits']
     #features_considered = ['MM', 'Permits']
-
     features = df[features_considered]
     features.index = df['Date Time']
     features.head()
 
-    #features.plot(subplots=True)
-
     dataset = features.values
     data_mean = dataset.mean(axis=0)
     data_std = dataset.std(axis=0)
-
     #dataset = (dataset-data_mean)/data_std
 
-    # past_history = 24
-    # future_target = 6
-    # STEP = 1
-    # dataset[:, 1] -> y_train_multi
-    
+    # dataset[:, 1] -> y_train_multi    
     x_train_multi, y_train_multi = multivariate_data(dataset, dataset[:, 1], 0,
                                                     TRAIN_SPLIT, past_history,
                                                     future_target, STEP)
@@ -192,7 +183,7 @@ for x, y in val_data_multi.take(1):
     print (multi_step_model.predict(x).shape)
 
 EVALUATION_INTERVAL = 150
-EPOCHS = 15
+EPOCHS = 20
 
 multi_step_history = multi_step_model.fit(train_data_multi, epochs=EPOCHS,
                                           steps_per_epoch=EVALUATION_INTERVAL,
@@ -206,3 +197,7 @@ for x, y in val_data_multi.take(5):
 
 ## Time series windowing
 # https://www.tensorflow.org/guide/data#time_series_windowing
+
+## Save prediction model
+history_size = '_'.join(map(str, [past_history, future_target]))
+multi_step_model.save('multi_step_model_'+history_size+'.h5')

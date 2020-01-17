@@ -13,6 +13,9 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 def config():
     ## path order -> long 'Date Time'
+    ## etc type; rolling div
+    path11 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Stock_div.txt"
+    path12 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Exchange_div.txt"
     ## 100-based index data type; rolling div
     path1 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MG_div.txt"
     path2 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MM_div.txt"
@@ -28,13 +31,10 @@ def config():
     ## rate type; rolling sub
     path9 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Interest_sub.txt"
     path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_sub.txt"
-    ## etc type; rolling div
-    path11 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Stock_div.txt"
-    path12 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Exchange_div.txt"
 
-    norm_flag_list = [False, False, False, False, True, True, True, True, False, False, False, False]
-    path_li = [path1, path2, path3, path4, path5, path6, path7, path8, path9, path10, path11, path12]
-    window_li = [12, 12, 12, 1, 32, 32, 24, 12, 6, 6, 1, 1] # month
+    norm_flag_list = [False, False, False, False, False, False, True, True, True, True, False, False]
+    path_li = [path11, path12, path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
+    window_li = [1, 1, 12, 12, 12, 1, 32, 32, 24, 12, 6, 6] # month
 
     return path_li, window_li, norm_flag_list
 
@@ -60,7 +60,7 @@ def replace_reg_name(df):
                     }, inplace =True)
     return df
 
-def preprocess_df(path):
+def preprocess_df(path, drop_reg_li):
     df = pd.read_csv(path, sep='\t', dtype=str)
     df = replace_reg_name(df)
     df = df.set_index('Reg').T #transpose
@@ -69,7 +69,8 @@ def preprocess_df(path):
         df = df.applymap(lambda x: x.replace(',', ''))
     if df.isin(['-','nan']).any().any():
         df.replace({'-':None, 'nan':None}, inplace =True)
-    df = df.drop(['SJ', 'Cap', 'Total'], axis=1, errors='ignore') #drop column
+    #df = df.drop(['SJ', 'Cap', 'Total'], axis=1, errors='ignore') #drop column
+    df = df.drop(drop_reg_li, axis=1, errors='ignore') #drop column
     df = df.dropna()
     df = df.apply(pd.to_numeric)
     return df
@@ -88,7 +89,7 @@ def get_suffix_list(header_list):
     suffix_list = list(map(lambda x: '_'+x, header_list))
     return suffix_list
 
-def build_merged_df(path_li, window_li, norm_flag_li, save_flag):
+def build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, save_flag):
     df_roll_list = []
     header_list = []
     for path, window, norm_flag in zip(path_li, window_li, norm_flag_li):
@@ -96,7 +97,7 @@ def build_merged_df(path_li, window_li, norm_flag_li, save_flag):
         header_list.append(prefix)
 
         ## preprocessing
-        df_pre = preprocess_df(path)
+        df_pre = preprocess_df(path, drop_reg_li)
         if norm_flag:
             df_pre = supply_normalize(df_pre)
 
@@ -105,8 +106,8 @@ def build_merged_df(path_li, window_li, norm_flag_li, save_flag):
             if data_type == "sum": # cumulative sum; supply type
                 df_roll = df_pre.rolling(window).sum().dropna()
             elif data_type == "div": # two point div; index type
-                df_roll = df_pre.rolling(window, center=True).apply(lambda x: div_func(x)).dropna()
-                #df_roll = df_pre.rolling(window).apply(lambda x: div_func(x)).dropna()
+                #df_roll = df_pre.rolling(window, center=True).apply(lambda x: div_func(x)).dropna()
+                df_roll = df_pre.rolling(window).apply(lambda x: div_func(x)).dropna()
             elif data_type == "percent":
                 df_roll = df_pre
             elif data_type == "sub": # two point sub; rate type
@@ -180,20 +181,20 @@ def multi_data_config(path_li, norm_flag_li, cat_list, win_list):
     norm_flag_li = [norm_flag_li[i] for i in cat_indice_list]
     return path_li, window_li, norm_flag_li
 
-def build_merged_and_stacked_total_table():
+def build_merged_and_stacked_total_table(drop_reg_li):
     path_li, window_li, norm_flag_li = config()
-    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, True)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, True)
     #df_stack = build_stacked_df(df_merged, header_list, True)
     build_stacked_df(df_merged, header_list, True)
 
-def build_pair_corr_table(cat1, start1, end1, cat2, start2, end2, corr_cutoff):
+def build_pair_corr_table(cat1, start1, end1, cat2, start2, end2, corr_cutoff, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
 
     p_corr_li = []
     for win1 in range(start1, end1):
         for win2 in range(start2, end2):
-            path_li, window_li, norm_flag_li = pair_data_config(path_li, window_li, norm_flag_li, cat1, win1, cat2, win2)
-            df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+            path_li, window_li, norm_flag_li = pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2)
+            df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
             df_stack = build_stacked_df(df_merged, header_list, False)
             pearson_r = df_stack.corr().iloc[0,1]
             if abs(pearson_r) > corr_cutoff:
@@ -309,20 +310,20 @@ def plot_pair_corr(df, cat1, cat2, filename_prefix):
     f.savefig(filename_prefix+'.png')
     print(filename_prefix, offset)
 
-def plot_total_pair_corr(cat1, win1, cat2, win2):
+def plot_total_pair_corr(cat1, win1, cat2, win2, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
     path_li, window_li, norm_flag_li = pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2)
-    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
     filename_prefix = '_'.join([cat1, str(win1), cat2, str(win2)])
     # plot_pair_pearson_corr(df_stack, cat1, cat2, filename_prefix)
     # plot_pair_lagged_corr(df_stack, cat1, cat2, filename_prefix)
     plot_pair_corr(df_stack, cat1, cat2, filename_prefix)
 
-def plot_total_multi_corr(cat_list, win_list):
+def plot_total_multi_corr(cat_list, win_list, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
     path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, cat_list, win_list)
-    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
     filename_prefix = '_'.join(cat_list + list(map(str, win_list)))
     
@@ -334,10 +335,10 @@ def plot_total_multi_corr(cat_list, win_list):
     f.subplots_adjust(top=0.80)
     f.savefig(filename_prefix+'.png')
 
-def plot_per_reg_pair_corr(cat1, win1, cat2, win2):
+def plot_per_reg_pair_corr(cat1, win1, cat2, win2, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
     path_li, window_li, norm_flag_li = pair_data_config(path_li, norm_flag_li, cat1, win1, cat2, win2)
-    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
 
     for region in list(df_stack['Reg'].drop_duplicates()):
@@ -347,10 +348,10 @@ def plot_per_reg_pair_corr(cat1, win1, cat2, win2):
         # plot_pair_lagged_corr(region_df, cat1, cat2, filename_prefix)
         plot_pair_corr(region_df, cat1, cat2, filename_prefix)
 
-def plot_per_reg_multi_corr(cat_list, win_list):
+def plot_per_reg_multi_corr(cat_list, win_list, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
     path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, cat_list, win_list)
-    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, False)
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
     df_stack = build_stacked_df(df_merged, header_list, False)
 
     for region in list(df_stack['Reg'].drop_duplicates()):
@@ -362,58 +363,82 @@ def plot_per_reg_multi_corr(cat_list, win_list):
         f,ax=plt.subplots(figsize=(14,5))
         df.rolling(window=3,center=True).median().plot(ax=ax)
         ax.set(xlabel='Date',ylabel='Rate',title=f"Overall Pearson r = {np.round(overall_pearson_r,2)}")
+        ax.axhline(0, color='r', linewidth=1)
         f.subplots_adjust(top=0.80)
         f.savefig(filename_prefix+'.png')
 
-############################################################
-def plot_multi_reg(cat, win, reg_list):
+def plot_multi_reg(cat, win, reg_list, drop_reg_li):
     path_li, window_li, norm_flag_li = config()
     path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, [cat], [win])
-    
-############################################################
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, False)
+
+    df_merged.columns = list(map(lambda x:x.replace('_'+cat,''), df_merged.columns))
+    df = df_merged[reg_list]
+    df = df.dropna()
+    filename_prefix = '_'.join([cat, str(win)] + reg_list)
+
+    overall_pearson_r = df.corr()
+    f,ax=plt.subplots(figsize=(14,5))
+    df.rolling(window=3,center=True).median().plot(ax=ax)
+    ax.set(xlabel='Date',ylabel='Rate',title=f"Overall Pearson r = {np.round(overall_pearson_r,2)}")
+    ax.axhline(0, color='r', linewidth=1)
+    f.subplots_adjust(top=0.80)
+    f.savefig(filename_prefix+'.png')
 
 
 
 if __name__ == "__main__":
     ## Categories
-    total_cat = ['MG','MM','JS','JSratio','Permits','Starts','Completed',
-                'Unsold','Interest','JW','Stock','Exchange']
+    total_cat = ['Stock','Exchange', 'MG','MM','JS','JSratio','Permits','Starts','Completed',
+                'Unsold','Interest','JW']
 
     ## Build total table; input stacked data for LSTM learning
-    #build_merged_and_stacked_total_table()
+    build_merged_and_stacked_total_table(['SJ','Total','Cap'])
 
     ## Grid search (Build two category pearson correlation table)
-    # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6) #[1, 1, 0.8871]
-    # build_pair_corr_table('MM', 1, 24, 'MG', 1, 24, 0.4) #[1, 1, 0.8622]
-    # build_pair_corr_table('MM', 1, 48, 'Unsold', 1, 42, 0.4) #[41, 40, -0.5465]
-    # build_pair_corr_table('MM', 1, 48, 'Permits', 1, 42, 0.4) #[23, 38, -0.5004]
-    # build_pair_corr_table('MM', 1, 48, 'Starts', 1, 42, 0.4) #[23, 41, -0.5468]
-    # build_pair_corr_table('MM', 1, 24, 'Completed', 1, 42, 0.4) #[18, 14, -0.5372]
-    # build_pair_corr_table('JS', 1, 24, 'Completed', 1, 42, 0.4) #[18, 15, -0.6938]
-    # build_pair_corr_table('MM', 1, 36, 'Interest', 1, 24, 0.2) #[1, 1, -0.6553]
-    # build_pair_corr_table('MM', 1, 24, 'Stock', 1, 24, 0.3) #[1, 1, 0.7664]
+    # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6, ['SJ','Total','Cap']) #[1, 1, 0.8871]
+    # build_pair_corr_table('MM', 1, 24, 'MG', 1, 24, 0.4, ['SJ','Total','Cap']) #[1, 1, 0.8622]
+    # build_pair_corr_table('MM', 1, 48, 'Unsold', 1, 42, 0.4, ['SJ','Total','Cap']) #[41, 40, -0.5465]
+    # build_pair_corr_table('MM', 1, 48, 'Permits', 1, 42, 0.4, ['SJ','Total','Cap']) #[23, 38, -0.5004]
+    # build_pair_corr_table('MM', 1, 48, 'Starts', 1, 42, 0.4, ['SJ','Total','Cap']) #[23, 41, -0.5468]
+    # build_pair_corr_table('MM', 1, 24, 'Completed', 1, 42, 0.4, ['SJ','Total','Cap']) #[18, 14, -0.5372]
+    # build_pair_corr_table('JS', 1, 24, 'Completed', 1, 42, 0.4, ['SJ','Total','Cap']) #[18, 15, -0.6938]
+    # build_pair_corr_table('MM', 1, 36, 'Interest', 1, 24, 0.2, ['SJ','Total','Cap']) #[1, 1, -0.6553]
+    # build_pair_corr_table('MM', 1, 24, 'Stock', 1, 24, 0.3, ['SJ','Total','Cap']) #[1, 1, 0.7664]
 
     ## Plot correlation
-    # plot_total_pair_corr('MM', 3, 'JS', 3)
-    # plot_per_reg_pair_corr('MM', 3, 'JS', 3)
-    # plot_total_pair_corr('MM', 3, 'Unsold', 1)
-    # plot_per_reg_pair_corr('MM', 3, 'Unsold', 1)
-    # plot_total_pair_corr('MM', 12, 'Permits', 24)
-    # plot_per_reg_pair_corr('MM', 12, 'Permits', 24)
-    # plot_per_reg_pair_corr('MM', 12, 'Interest', 12)
-    # plot_per_reg_pair_corr('JS', 12, 'Completed', 12)
+    # plot_total_pair_corr('MM', 3, 'JS', 3, ['SJ','Total','Cap'])
+    # plot_per_reg_pair_corr('MM', 3, 'JS', 3, ['SJ','Total','Cap'])
+    # plot_total_pair_corr('MM', 3, 'Unsold', 1, ['SJ','Total','Cap'])
+    # plot_per_reg_pair_corr('MM', 3, 'Unsold', 1, ['SJ','Total','Cap'])
+    # plot_total_pair_corr('MM', 12, 'Permits', 24, ['SJ','Total','Cap'])
+    # plot_per_reg_pair_corr('MM', 12, 'Permits', 24, ['SJ','Total','Cap'])
+    # plot_per_reg_pair_corr('MM', 12, 'Interest', 12, ['SJ','Total','Cap'])
+    # plot_per_reg_pair_corr('JS', 12, 'Completed', 12, ['SJ','Total','Cap'])
 
     ## Multi category plot
-    # plot_total_multi_corr(['Permits','Starts','Completed'], [12,12,12])
-    # plot_per_reg_multi_corr(['Permits','Starts','Completed'], [12,12,12])
-    # plot_per_reg_multi_corr(['MM','MG','Stock'], [12,12,12])
+    # plot_total_multi_corr(['Permits','Starts','Completed'], [12,12,12], ['SJ','Total','Cap'])
+    # plot_per_reg_multi_corr(['Permits','Starts','Completed'], [12,12,12], ['SJ','Total','Cap'])
+    # plot_per_reg_multi_corr(['MM','MG','Stock'], [12,12,12], ['SJ','Total','Cap'])
 
-    ############################################################
     ## Multi region plot
-    plot_multi_reg('Permits', 12, ['BS','GN'])
-    ############################################################
+    # plot_multi_reg('Permits', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
+    # plot_multi_reg('MM', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
+    # plot_multi_reg('JS', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
+    # plot_multi_reg('Completed', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
 
-    ##############################
-    # add total, cap region
-    ##############################
+    # plot_multi_reg('Permits', 6, ['SJ','DJ','CB','CN'], ['Total','Cap'])
+    # plot_multi_reg('MM', 6, ['SJ','DJ','CB','CN'], ['Total','Cap'])
+    # plot_multi_reg('JS', 6, ['SJ','DJ','CB','CN'], ['Total','Cap'])
+    # plot_multi_reg('Completed', 6, ['SJ','DJ','CB','CN'], ['Total','Cap'])
+
+    # plot_multi_reg('Permits', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
+    # plot_multi_reg('MM', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
+    # plot_multi_reg('JS', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
+    # plot_multi_reg('Completed', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
+
+    # plot_multi_reg('Permits', 6, ['SO','IC','GG'], ['SJ','Total'])
+    # plot_multi_reg('MM', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
+    # plot_multi_reg('JS', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
+    # plot_multi_reg('Completed', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
     
