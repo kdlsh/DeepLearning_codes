@@ -393,7 +393,7 @@ if __name__ == "__main__":
                 'Unsold','Interest','JW']
 
     ## Build total table; input stacked data for LSTM learning
-    build_merged_and_stacked_total_table(['SJ','Total','Cap'])
+    # build_merged_and_stacked_total_table(['SJ','Total','Cap'])
 
     ## Grid search (Build two category pearson correlation table)
     # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6, ['SJ','Total','Cap']) #[1, 1, 0.8871]
@@ -422,8 +422,8 @@ if __name__ == "__main__":
     # plot_per_reg_multi_corr(['MM','MG','Stock'], [12,12,12], ['SJ','Total','Cap'])
 
     ## Multi region plot
-    # plot_multi_reg('Permits', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
-    # plot_multi_reg('MM', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
+    # plot_multi_reg('Permits', 32, ['BS','GN','GG','SO'], ['SJ','Total','Cap'])
+    # plot_multi_reg('MM', 12, ['BS','GN','GG','SO'], ['SJ','Total','Cap'])
     # plot_multi_reg('JS', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
     # plot_multi_reg('Completed', 6, ['BS','GN','GB','SO'], ['SJ','Total','Cap'])
 
@@ -437,8 +437,8 @@ if __name__ == "__main__":
     # plot_multi_reg('JS', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
     # plot_multi_reg('Completed', 6, ['GJ','JN','JB'], ['SJ','Total','Cap'])
 
-    # plot_multi_reg('Permits', 6, ['SO','IC','GG'], ['SJ','Total'])
-    # plot_multi_reg('MM', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
+    # plot_multi_reg('Permits', 32, ['SO','IC','GG'], ['SJ','Total'])
+    # plot_multi_reg('MM', 12, ['SO','IC','GG','Cap'], ['SJ','Total'])
     # plot_multi_reg('JS', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
     # plot_multi_reg('Completed', 6, ['SO','IC','GG','Cap'], ['SJ','Total'])
     
