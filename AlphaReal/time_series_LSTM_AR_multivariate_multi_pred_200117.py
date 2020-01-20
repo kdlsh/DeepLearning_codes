@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, sys, re
 import pandas as pd
+from time_series_data_analysis_200117 import config
+from time_series_data_analysis_200117 import multi_data_config
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -103,5 +105,33 @@ for region in list(df['Reg'].drop_duplicates()):
 
     ########################TO DO#############################
     # 1. parse to real change rate and price index
-    # 2. 3 or 5 category
     ##########################################################
+
+    path_li, window_li, norm_flag_li = config()
+    path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, ['MM'], [12])
+
+
+def build_merged_df(path_li, window_li, drop_reg_li):
+    df_roll_list = []
+    header_list = []
+    for path, window, norm_flag in zip(path_li, window_li, norm_flag_li):
+        prefix, data_type = os.path.basename(path).split('.')[0].split('_')
+        header_list.append(prefix)
+
+        ## preprocessing
+        df_pre = preprocess_df(path, drop_reg_li)
+        df_roll_list.append(df_pre)
+            
+    ## add suffix
+    suffix_list = get_suffix_list(header_list)
+    for i in range(len(df_roll_list)):
+        df_roll_list[i] = df_roll_list[i].add_suffix(suffix_list[i])
+        df_roll_list[i]['Date Time'] = df_roll_list[i].index
+
+    ## save merged dataframes
+    df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time', how='outer'), df_roll_list)
+    #df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time'), df_roll_list)
+    df_final.index = df_final['Date Time']
+    df_final = df_final.drop(columns=['Date Time'])
+
+    return df_final, header_list
