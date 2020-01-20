@@ -95,10 +95,11 @@ for region in list(df['Reg'].drop_duplicates()):
         final_x, final_y = x, y
     
     ## Feed latest data to model, plot multi_step_prediction 
-    print(region)
+    #print(region)
     prediction = model.predict(final_x)
-    multi_step_pred_plot(final_x[0], prediction[0])
-    sys.exit()
+    print(' '.join(map(str, prediction[0])))
+    #multi_step_pred_plot(final_x[0], prediction[0])
+    #sys.exit()
 
     ########################TO DO#############################
     # 1. parse to real change rate and price index

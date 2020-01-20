@@ -170,7 +170,6 @@ def multi_step_plot(history, true_future, prediction):
 for x, y in train_data_multi.take(1):
     print(x[0])
     multi_step_plot(x[0], y[0], np.array([0]))
-    sys.exit()
 
 multi_step_model = tf.keras.models.Sequential()
 multi_step_model.add(tf.keras.layers.LSTM(12,
