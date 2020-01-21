@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, sys, re
 import pandas as pd
-from time_series_data_analysis_200117 import config
-from time_series_data_analysis_200117 import multi_data_config
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -21,10 +19,15 @@ past_history = 6  #24
 future_target = 0
 STEP = 1
 
-## The dataset
-txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
+## The stacked dataset
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data_200121.csv"
 df = pd.read_csv(txt_path)
 features_li = ['JS', 'MM', 'Permits']
+
+## The raw dataset
+raw_txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data_200121_raw.csv"
+raw_df = pd.read_csv(raw_txt_path)
+target_feature = 'MM'
 
 ## Load prediction model
 model = tf.keras.models.load_model('multi_step_model_6_6.h5')
@@ -65,6 +68,12 @@ def build_multi_step_train_val_data(df, features_li):
                                                 future_target, STEP)                                            
     return x_val_multi, y_val_multi
 
+def build_target_feature_raw_data(df, feature):
+    feature_df = df[feature]
+    feature_df.index = df['Date Time']
+    feature_df = feature_df.dropna()                                       
+    return feature_df
+
 def create_time_steps(length):
     time_steps = []
     for i in range(-length, 0, 1):
@@ -88,6 +97,14 @@ for region in list(df['Reg'].drop_duplicates()):
     region_df = df.loc[df['Reg'] == region]
     x_val_multi, y_val_multi = build_multi_step_train_val_data(region_df, features_li)
 
+    region_raw_df = raw_df.loc[raw_df['Reg'] == region]
+    region_raw_df = build_target_feature_raw_data(region_raw_df, target_feature)
+    nrow = region_raw_df.shape[0]
+    target_feature_window_size = 12
+    print(region_raw_df[(nrow-target_feature_window_size+1):nrow])
+    sys.exit()
+    #=B184*(D195/100+1)
+
     val_data_multi = tf.data.Dataset.from_tensor_slices((x_val_multi, y_val_multi))
     val_data_num = len(y_val_multi)
     val_data_multi = val_data_multi.batch(1).repeat()
@@ -97,7 +114,7 @@ for region in list(df['Reg'].drop_duplicates()):
         final_x, final_y = x, y
     
     ## Feed latest data to model, plot multi_step_prediction 
-    #print(region)
+    print(region)
     prediction = model.predict(final_x)
     print(' '.join(map(str, prediction[0])))
     #multi_step_pred_plot(final_x[0], prediction[0])
@@ -106,32 +123,3 @@ for region in list(df['Reg'].drop_duplicates()):
     ########################TO DO#############################
     # 1. parse to real change rate and price index
     ##########################################################
-
-    path_li, window_li, norm_flag_li = config()
-    path_li, window_li, norm_flag_li = multi_data_config(path_li, norm_flag_li, ['MM'], [12])
-
-
-def build_merged_df(path_li, window_li, drop_reg_li):
-    df_roll_list = []
-    header_list = []
-    for path, window, norm_flag in zip(path_li, window_li, norm_flag_li):
-        prefix, data_type = os.path.basename(path).split('.')[0].split('_')
-        header_list.append(prefix)
-
-        ## preprocessing
-        df_pre = preprocess_df(path, drop_reg_li)
-        df_roll_list.append(df_pre)
-            
-    ## add suffix
-    suffix_list = get_suffix_list(header_list)
-    for i in range(len(df_roll_list)):
-        df_roll_list[i] = df_roll_list[i].add_suffix(suffix_list[i])
-        df_roll_list[i]['Date Time'] = df_roll_list[i].index
-
-    ## save merged dataframes
-    df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time', how='outer'), df_roll_list)
-    #df_final = reduce(lambda left,right: pd.merge(left,right,on='Date Time'), df_roll_list)
-    df_final.index = df_final['Date Time']
-    df_final = df_final.drop(columns=['Date Time'])
-
-    return df_final, header_list

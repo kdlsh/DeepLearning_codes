@@ -15,7 +15,7 @@ mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 ## The dataset
-txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data_200121.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
 df = pd.read_csv(txt_path)
 df = df.drop(['Unsold','Completed','Starts','JSratio','JW'], axis=1)

@@ -32,9 +32,36 @@ def config():
     path9 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Interest_sub.txt"
     path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_sub.txt"
 
-    norm_flag_list = [False, False, False, False, False, False, True, True, True, True, False, False]
     path_li = [path11, path12, path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
+    norm_flag_list = [False, False, False, False, False, False, True, True, True, True, False, False]
     window_li = [1, 1, 12, 12, 12, 1, 32, 32, 24, 12, 6, 6] # month
+
+    return path_li, window_li, norm_flag_list
+
+def raw_config():
+    ## path order -> long 'Date Time'
+    ## etc type; rolling div
+    path11 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Stock_div.txt"
+    path12 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Exchange_div.txt"
+    ## 100-based index data type; rolling div
+    path1 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MG_div.txt"
+    path2 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MM_div.txt"
+    path3 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JS_div.txt"
+    ## percent type
+    path4 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JSratio_percent.txt"
+    ## supply int data type; normalize; rolling sum
+    path5 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Permits_sum.txt"
+    path6 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Starts_sum.txt"
+    path7 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Completed_sum.txt"
+    ## supply int data type; normalize; rolling sub
+    path8 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Unsold_sub.txt"
+    ## rate type; rolling sub
+    path9 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Interest_sub.txt"
+    path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_sub.txt"
+
+    path_li = [path11, path12, path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
+    norm_flag_list = [False, False, False, False, False, False, False, False, False, False, False, False]
+    window_li = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # month
 
     return path_li, window_li, norm_flag_list
 
@@ -183,6 +210,12 @@ def multi_data_config(path_li, norm_flag_li, cat_list, win_list):
 
 def build_merged_and_stacked_total_table(drop_reg_li):
     path_li, window_li, norm_flag_li = config()
+    df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, True)
+    #df_stack = build_stacked_df(df_merged, header_list, True)
+    build_stacked_df(df_merged, header_list, True)
+
+def build_raw_merged_and_stacked_total_table(drop_reg_li):
+    path_li, window_li, norm_flag_li = raw_config()
     df_merged, header_list = build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, True)
     #df_stack = build_stacked_df(df_merged, header_list, True)
     build_stacked_df(df_merged, header_list, True)
@@ -393,7 +426,8 @@ if __name__ == "__main__":
                 'Unsold','Interest','JW']
 
     ## Build total table; input stacked data for LSTM learning
-    # build_merged_and_stacked_total_table(['SJ','Total','Cap'])
+    build_merged_and_stacked_total_table(['SJ','Total','Cap'])
+    build_raw_merged_and_stacked_total_table(['SJ','Total','Cap'])
 
     ## Grid search (Build two category pearson correlation table)
     # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6, ['SJ','Total','Cap']) #[1, 1, 0.8871]
