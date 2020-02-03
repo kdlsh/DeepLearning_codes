@@ -45,11 +45,11 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 
 
 ## fisrt 100 rows : training dataset, remaining : validation dataset
-TRAIN_SPLIT = 110
+TRAIN_SPLIT = 100
 tf.random.set_seed(10)
 
 past_history = 6  #24
-future_target = 6 #12
+future_target = 24 #12
 STEP = 1
 
 ## Multi-Step model (predict a sequence of the future)

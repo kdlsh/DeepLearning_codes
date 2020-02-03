@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, sys, re
 import pandas as pd
+from functools import reduce
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -18,8 +19,10 @@ work_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\"
 stack_csv = "stacked_data_200121.csv"
 raw_csv = "stacked_data_200121_raw.csv"
 features_li = ['JS', 'MM', 'Permits'] #prediction model features
-target_feature = 'MM'
+#target_feature = 'MM'
+target_feature = 'JS'
 target_feature_window_size = 12 #rolling div window
+#model_file = 'multi_step_model_JS_6_6.h5' #past_future
 model_file = 'multi_step_model_6_6.h5' #past_future
 
 
@@ -57,12 +60,14 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
             labels.append(target[i:i+target_size])
     return np.array(data), np.array(labels)
 
+def build_target_feature_raw_data(df, feature):
+    feature_df = df[feature]
+    feature_df.index = df['Date Time']
+    feature_df = feature_df.dropna()                                       
+    return feature_df
+
 def build_multi_step_train_val_data(df, features_li, past_history):
-
-    features = df[features_li]
-    features.index = df['Date Time']
-    features = features.dropna()
-
+    features = build_target_feature_raw_data(df,features_li)
     dataset = features.values
     data_mean = dataset.mean(axis=0)
     data_std = dataset.std(axis=0)
@@ -73,12 +78,6 @@ def build_multi_step_train_val_data(df, features_li, past_history):
                                                 0, None, past_history, 0, 1)
                                                 # future_target, STEP)                                            
     return x_val_multi, y_val_multi
-
-def build_target_feature_raw_data(df, feature):
-    feature_df = df[feature]
-    feature_df.index = df['Date Time']
-    feature_df = feature_df.dropna()                                       
-    return feature_df
 
 def create_time_steps(length):
     time_steps = []
@@ -108,9 +107,8 @@ def extract_last_batch(x_val_multi, y_val_multi):
         final_x, final_y = x, y
     return final_x, final_y
 
-def extract_raw_last_batch(raw_df, region):
-    region_raw_df = raw_df.loc[raw_df['Reg'] == region]
-    region_raw_df = build_target_feature_raw_data(region_raw_df, target_feature)
+def extract_raw_last_batch(raw_df, future_target):
+    region_raw_df = build_target_feature_raw_data(raw_df, target_feature)
     nrow = region_raw_df.shape[0]
     # target_feature_window_size = 12
     start_index = nrow-target_feature_window_size+1
@@ -118,13 +116,9 @@ def extract_raw_last_batch(raw_df, region):
     raw_value_list = region_raw_df[start_index:end_index].tolist()
     return raw_value_list
 
-
-## Init
-df, raw_df, model, past_history, future_target = init()
-
-## Build per region latest dataset
-for region in list(df['Reg'].drop_duplicates()):
+def get_region_summary_series(df, raw_df, region, past_history, future_target):
     region_df = df.loc[df['Reg'] == region]
+    raw_region_df = raw_df.loc[df['Reg'] == region]
     x_val_multi, y_val_multi = build_multi_step_train_val_data(region_df, features_li, past_history)
 
     ## extract last batch data
@@ -132,17 +126,54 @@ for region in list(df['Reg'].drop_duplicates()):
     
     ## Feed latest data to model, plot multi_step_prediction 
     prediction = model.predict(final_x)
-    #print(' '.join(map(str, prediction[0])))
-    print(region, prediction[0])
+    #print(region, prediction[0])
     #multi_step_pred_plot(final_x[0], prediction[0])
 
-    ## extract raw data
-    raw_value_list = extract_raw_last_batch(raw_df, region)
+    ## extract raw data for prediction table
+    raw_value_list = extract_raw_last_batch(raw_region_df, future_target)
 
+    ## monthly summary table data
+    region_df_filt = build_target_feature_raw_data(region_df, features_li)
+    raw_df_filt = build_target_feature_raw_data(raw_region_df, features_li)
+            
+    ## prediction and convert to index value
     index_list = list(map(lambda x, y: x*(y/100+1), raw_value_list, prediction[0]))
-    print(region, index_list)
     total_change_rate = (index_list[-1]/index_list[0]-1)*100
-    print(region, total_change_rate)
 
-    ########################TO DO#############################
-    ##########################################################
+    ## monthly summary series
+    s1 = raw_df_filt.iloc[-1]
+    #s1 = s1.rename(lambda x:x+"_raw")
+    s2 = region_df_filt.iloc[-1]
+    s2 = s2.rename(lambda x:x+"_norm")
+    s3 = pd.Series(prediction[0])
+    s3 = s3.rename(lambda x:"Pred_"+str(x+1))
+    s4 = pd.Series(index_list)
+    s4 = s4.rename(lambda x:"Index_"+str(x+1))
+    s5 = pd.Series(total_change_rate)
+    s5 = s5.rename({0:"Total"})
+    #region_series = pd.concat([s1, s2, s3, s4, s5], ignore_index=True)
+    region_series = pd.concat([s1, s2, s3, s4, s5])
+    region_series = region_series.rename(region)
+
+    return region_series
+
+
+## Init
+df, raw_df, model, past_history, future_target = init()
+
+## summary series list
+summary_series_dic = {}
+
+## Build per region latest dataset
+for region in list(df['Reg'].drop_duplicates()):
+    region_series = get_region_summary_series(df, raw_df, region, past_history, future_target)
+    summary_series_dic[region] = region_series
+
+## Monthly summary table
+summary_df = pd.DataFrame.from_dict(summary_series_dic).T
+print(summary_df)
+
+
+########################TO DO#############################
+#### plot
+##########################################################

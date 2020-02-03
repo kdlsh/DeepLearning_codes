@@ -15,7 +15,7 @@ mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 ## The dataset
-txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data.csv"
+txt_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\stacked_data_200121.csv"
 #df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
 df = pd.read_csv(txt_path)
 print(df.head())
@@ -68,7 +68,7 @@ def build_single_step_train_val_data(df):
 
     ## Single step model
     past_history = 6 #6
-    future_target = 3 #4
+    future_target = 4 #4
     STEP = 1
 
     x_train_single, y_train_single = multivariate_data(dataset, dataset[:, 1], 0,
@@ -121,7 +121,10 @@ val_data_single = tf.data.Dataset.from_tensor_slices((x_val_single, y_val_single
 val_data_single = val_data_single.batch(BATCH_SIZE).repeat()
 
 single_step_model = tf.keras.models.Sequential()
-single_step_model.add(tf.keras.layers.LSTM(12, input_shape=x_train_single.shape[-2:]))
+single_step_model.add(tf.keras.layers.LSTM(12, 
+                            return_sequences=True,
+                            input_shape=x_train_single.shape[-2:])) #12
+single_step_model.add(tf.keras.layers.LSTM(6, activation='relu')) #8
 single_step_model.add(tf.keras.layers.Dense(1))
 
 single_step_model.compile(optimizer=tf.keras.optimizers.RMSprop(), loss='mae')

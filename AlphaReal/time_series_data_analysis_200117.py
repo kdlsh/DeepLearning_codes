@@ -11,7 +11,7 @@ from functools import reduce
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-def config():
+def get_path_list():
     ## path order -> long 'Date Time'
     ## etc type; rolling div
     path11 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Stock_div.txt"
@@ -33,36 +33,19 @@ def config():
     path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_sub.txt"
 
     path_li = [path11, path12, path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
+
+    return path_li
+
+def config():
+    path_li = get_path_list()
     norm_flag_list = [False, False, False, False, False, False, True, True, True, True, False, False]
     window_li = [1, 1, 12, 12, 12, 1, 32, 32, 24, 12, 6, 6] # month
-
     return path_li, window_li, norm_flag_list
 
 def raw_config():
-    ## path order -> long 'Date Time'
-    ## etc type; rolling div
-    path11 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Stock_div.txt"
-    path12 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Exchange_div.txt"
-    ## 100-based index data type; rolling div
-    path1 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MG_div.txt"
-    path2 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\MM_div.txt"
-    path3 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JS_div.txt"
-    ## percent type
-    path4 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JSratio_percent.txt"
-    ## supply int data type; normalize; rolling sum
-    path5 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Permits_sum.txt"
-    path6 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Starts_sum.txt"
-    path7 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Completed_sum.txt"
-    ## supply int data type; normalize; rolling sub
-    path8 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Unsold_sub.txt"
-    ## rate type; rolling sub
-    path9 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\Interest_sub.txt"
-    path10 = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\raw_data\\JW_sub.txt"
-
-    path_li = [path11, path12, path1, path2, path3, path4, path5, path6, path7, path8, path9, path10]
+    path_li = get_path_list()
     norm_flag_list = [False, False, False, False, False, False, False, False, False, False, False, False]
     window_li = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # month
-
     return path_li, window_li, norm_flag_list
 
 def replace_reg_name(df):
