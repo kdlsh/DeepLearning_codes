@@ -7,3 +7,5 @@
 tf2_template/Text/training_checkpoints/checkpoint
 *.jpg
 *.npy
+*.png
+*.gz
