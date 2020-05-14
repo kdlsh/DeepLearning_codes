@@ -599,8 +599,8 @@ if __name__ == "__main__":
     _output_dir = "input_data/"
 
     ## Build total table; input stacked data for LSTM learning
-    build_merged_and_stacked_total_table(["SJ", "Total", "Cap"])  #'SJ','Total','Cap'
-    # build_raw_merged_and_stacked_total_table(["SJ", "Total", "Cap"])
+    # build_merged_and_stacked_total_table(["SJ", "Total", "Cap"])  #'SJ','Total','Cap'
+    build_raw_merged_and_stacked_total_table(["SJ", "Total", "Cap"])
 
     ## Grid search (Build two category pearson correlation table)
     # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6, ['SJ','Total','Cap']) #[1, 1, 0.8871]

@@ -15,11 +15,11 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 # mpl.rcParams['figure.figsize'] = (8, 6)
 # mpl.rcParams['axes.grid'] = False
 
-date = "200422"
-past_future = "6_24"
+date = "200514"
+past_future = "6_12"
 _output_dir = "pred_model/"
 
-work_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\"
+work_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\input_data\\"
 stack_csv = "stacked_data_{}.csv".format(date)
 raw_csv = "stacked_data_{}_raw.csv".format(date)
 features_li = ["JS", "MM", "Permits"]  # prediction model features

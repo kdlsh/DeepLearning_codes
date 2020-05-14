@@ -18,7 +18,7 @@ _input_dir = "D:/workspace/DeepLearning_codes/AlphaReal/input_data/"
 _output_dir = "pred_model/"
 
 ## The dataset
-run_date = "200422"
+run_date = "200514"
 txt_path = _input_dir + "stacked_data_{}.csv".format(run_date)
 
 # df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
