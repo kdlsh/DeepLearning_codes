@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
 
+from datetime import date
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,15 +18,26 @@ mpl.rcParams["axes.grid"] = False
 _input_dir = "D:/workspace/DeepLearning_codes/AlphaReal/input_data/"
 _output_dir = "pred_model/"
 
-## The dataset
-run_date = "200514"
-txt_path = _input_dir + "stacked_data_{}.csv".format(run_date)
 
-# df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
-df = pd.read_csv(txt_path)
-df = df.drop(["Unsold", "Completed", "Starts", "JSratio", "JW"], axis=1)
-df = df.dropna()
-print(df.head())
+def get_today_str():
+    today = date.today()
+    # dd/mm/YY
+    d1 = today.strftime("%Y%m%d")
+    d1 = d1[2:]
+    return d1
+
+
+def load_dataset():
+    ## The dataset
+    # run_date = "200514"
+    txt_path = _input_dir + "stacked_data_{}.csv".format(get_today_str())
+
+    # df = pd.read_csv(txt_path, sep='\t', lineterminator='\r')
+    df = pd.read_csv(txt_path)
+    df = df.drop(["Unsold", "Completed", "Starts", "JSratio", "JW"], axis=1)
+    df = df.dropna()
+    print(df.head())
+    return df
 
 
 def multivariate_data(
@@ -62,7 +74,7 @@ TRAIN_SPLIT = 100
 tf.random.set_seed(10)
 
 past_history = 6  # 24
-future_target = 12  # 12
+future_target = 6  # 12
 STEP = 1
 
 ## Multi-Step model (predict a sequence of the future)
@@ -88,6 +100,8 @@ def build_multi_step_train_val_data(df):
 
     return x_train_multi, y_train_multi, x_val_multi, y_val_multi
 
+
+df = load_dataset()
 
 x_train_li = []
 y_train_li = []
@@ -236,6 +250,6 @@ for x, y in val_data_multi.take(5):
 ## Save prediction model
 history_size = "_".join(map(str, [past_history, future_target]))
 multi_step_model.save(
-    _output_dir + "multi_step_model_{}_{}.h5".format(history_size, run_date)
+    _output_dir + "multi_step_model_{}_{}.h5".format(history_size, get_today_str())
 )
 

@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
 
+from datetime import date
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,22 +16,37 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 # mpl.rcParams['figure.figsize'] = (8, 6)
 # mpl.rcParams['axes.grid'] = False
 
-date = "200514"
-past_future = "6_12"
-_output_dir = "pred_model/"
 
+# past_future = "6_12"
+past_future = "6_6"
+_output_dir = "pred_model/"
 work_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\input_data\\"
-stack_csv = "stacked_data_{}.csv".format(date)
-raw_csv = "stacked_data_{}_raw.csv".format(date)
+
 features_li = ["JS", "MM", "Permits"]  # prediction model features
 target_feature = "MM"
-target_feature_window_size = 12  # rolling div window
-model_file = _output_dir + "multi_step_model_{}_{}.h5".format(
-    past_future, date
-)  # past_future
+# target_feature_window_size = 12  # rolling div window
+target_feature_window_size = 6  # rolling div window
+
+
+def get_today_str():
+    today = date.today()
+    # dd/mm/YY
+    d1 = today.strftime("%Y%m%d")
+    d1 = d1[2:]
+    return d1
 
 
 def init():
+
+    ## filename
+    # date = "200514"
+    date = get_today_str()
+    stack_csv = "stacked_data_{}.csv".format(date)
+    raw_csv = "stacked_data_{}_raw.csv".format(date)
+    model_file = _output_dir + "multi_step_model_{}_{}.h5".format(
+        past_future, date
+    )  # past_future
+
     ## The stacked dataset
     txt_path = work_path + stack_csv
     df = pd.read_csv(txt_path)
@@ -47,7 +63,7 @@ def init():
     past_history = int(filename_sp[3])
     future_target = int(filename_sp[4])
 
-    return df, raw_df, model, past_history, future_target
+    return model_file, df, raw_df, model, past_history, future_target
 
 
 def multivariate_data(
@@ -195,7 +211,7 @@ def write_xlsx(df, pred_output):
 
 
 ## Init
-df, raw_df, model, past_history, future_target = init()
+model_file, df, raw_df, model, past_history, future_target = init()
 
 ## summary series list
 summary_series_dic = {}
@@ -217,3 +233,4 @@ write_xlsx(summary_df, pred_output)
 ########################TO DO#############################
 #### plot
 ##########################################################
+

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # import tensorflow as tf
 
+from datetime import date
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +12,8 @@ import scipy.stats as stats
 from functools import reduce
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+_output_dir = "input_data/"
 
 
 def get_path_list():
@@ -92,6 +95,14 @@ def raw_config():
     ]
     window_li = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # month
     return path_li, window_li, norm_flag_list
+
+
+def get_today_str():
+    today = date.today()
+    # dd/mm/YY
+    d1 = today.strftime("%Y%m%d")
+    d1 = d1[2:]
+    return d1
 
 
 def replace_reg_name(df):
@@ -188,7 +199,9 @@ def get_suffix_list(header_list):
     return suffix_list
 
 
-def build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, save_flag):
+def build_merged_df(
+    path_li, window_li, norm_flag_li, drop_reg_li, save_flag=False, suffix=""
+):
     df_roll_list = []
     header_list = []
     for path, window, norm_flag in zip(path_li, window_li, norm_flag_li):
@@ -235,12 +248,14 @@ def build_merged_df(path_li, window_li, norm_flag_li, drop_reg_li, save_flag):
     df_final = df_final.drop(columns=["Date Time"])
 
     if save_flag:
-        df_final.to_csv("merged_data.csv", mode="w")
+        df_final.to_csv(
+            _output_dir + "merged_data_" + get_today_str() + suffix + ".csv", mode="w"
+        )
 
     return df_final, header_list
 
 
-def build_stacked_df(df_merged, header_list, save_flag):
+def build_stacked_df(df_merged, header_list, save_flag=False, suffix=""):
     ## stack merged dataframe
     df_ = pd.DataFrame(index=["0", "1"], columns=header_list)
     df_ = df_.fillna(np.NaN)
@@ -262,7 +277,9 @@ def build_stacked_df(df_merged, header_list, save_flag):
     df_ = df_[header_list + ["Reg"]]
     df_.index.name = "Date Time"
     if save_flag:
-        df_.to_csv("stacked_data.csv", mode="w")
+        df_.to_csv(
+            _output_dir + "stacked_data_" + get_today_str() + suffix + ".csv", mode="w"
+        )
     return df_
 
 
@@ -287,22 +304,21 @@ def multi_data_config(path_li, norm_flag_li, cat_list, win_list):
     return path_li, window_li, norm_flag_li
 
 
-def build_merged_and_stacked_total_table(drop_reg_li):
-    path_li, window_li, norm_flag_li = config()
-    df_merged, header_list = build_merged_df(
-        path_li, window_li, norm_flag_li, drop_reg_li, True
-    )
-    # df_stack = build_stacked_df(df_merged, header_list, True)
-    build_stacked_df(df_merged, header_list, True)
+def build_merged_and_stacked_total_table(drop_reg_li, raw_flag=False):
+    if raw_flag:
+        path_li, window_li, norm_flag_li = raw_config()
+        suffix = "_raw"
+    else:
+        path_li, window_li, norm_flag_li = config()
+        suffix = ""
 
-
-def build_raw_merged_and_stacked_total_table(drop_reg_li):
-    path_li, window_li, norm_flag_li = raw_config()
     df_merged, header_list = build_merged_df(
-        path_li, window_li, norm_flag_li, drop_reg_li, True
+        path_li, window_li, norm_flag_li, drop_reg_li, save_flag=True, suffix=suffix
     )
+
     # df_stack = build_stacked_df(df_merged, header_list, True)
-    build_stacked_df(df_merged, header_list, True)
+
+    build_stacked_df(df_merged, header_list, save_flag=True, suffix=suffix)
 
 
 def build_pair_corr_table(
@@ -319,7 +335,7 @@ def build_pair_corr_table(
             df_merged, header_list = build_merged_df(
                 path_li, window_li, norm_flag_li, drop_reg_li, False
             )
-            df_stack = build_stacked_df(df_merged, header_list, False)
+            df_stack = build_stacked_df(df_merged, header_list)
             pearson_r = df_stack.corr().iloc[0, 1]
             if abs(pearson_r) > corr_cutoff:
                 p_corr_li.append([win1, win2, pearson_r])
@@ -475,7 +491,7 @@ def plot_total_pair_corr(cat1, win1, cat2, win2, drop_reg_li):
     df_merged, header_list = build_merged_df(
         path_li, window_li, norm_flag_li, drop_reg_li, False
     )
-    df_stack = build_stacked_df(df_merged, header_list, False)
+    df_stack = build_stacked_df(df_merged, header_list)
     filename_prefix = "_".join([cat1, str(win1), cat2, str(win2)])
     # plot_pair_pearson_corr(df_stack, cat1, cat2, filename_prefix)
     # plot_pair_lagged_corr(df_stack, cat1, cat2, filename_prefix)
@@ -490,7 +506,7 @@ def plot_total_multi_corr(cat_list, win_list, drop_reg_li):
     df_merged, header_list = build_merged_df(
         path_li, window_li, norm_flag_li, drop_reg_li, False
     )
-    df_stack = build_stacked_df(df_merged, header_list, False)
+    df_stack = build_stacked_df(df_merged, header_list)
     filename_prefix = "_".join(cat_list + list(map(str, win_list)))
 
     df = df_stack.dropna()
@@ -514,7 +530,7 @@ def plot_per_reg_pair_corr(cat1, win1, cat2, win2, drop_reg_li):
     df_merged, header_list = build_merged_df(
         path_li, window_li, norm_flag_li, drop_reg_li, False
     )
-    df_stack = build_stacked_df(df_merged, header_list, False)
+    df_stack = build_stacked_df(df_merged, header_list)
 
     for region in list(df_stack["Reg"].drop_duplicates()):
         region_df = df_stack.loc[df_stack["Reg"] == region]
@@ -532,7 +548,7 @@ def plot_per_reg_multi_corr(cat_list, win_list, drop_reg_li):
     df_merged, header_list = build_merged_df(
         path_li, window_li, norm_flag_li, drop_reg_li, False
     )
-    df_stack = build_stacked_df(df_merged, header_list, False)
+    df_stack = build_stacked_df(df_merged, header_list)
 
     for region in list(df_stack["Reg"].drop_duplicates()):
         region_df = df_stack.loc[df_stack["Reg"] == region]
@@ -596,11 +612,9 @@ if __name__ == "__main__":
         "JW",
     ]
 
-    _output_dir = "input_data/"
-
     ## Build total table; input stacked data for LSTM learning
-    # build_merged_and_stacked_total_table(["SJ", "Total", "Cap"])  #'SJ','Total','Cap'
-    build_raw_merged_and_stacked_total_table(["SJ", "Total", "Cap"])
+    build_merged_and_stacked_total_table(["SJ", "Total", "Cap"])  #'SJ','Total','Cap'
+    build_merged_and_stacked_total_table(["SJ", "Total", "Cap"], raw_flag=True)
 
     ## Grid search (Build two category pearson correlation table)
     # build_pair_corr_table('MM', 1, 24, 'JS', 1, 24, 0.6, ['SJ','Total','Cap']) #[1, 1, 0.8871]
