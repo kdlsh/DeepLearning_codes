@@ -73,8 +73,10 @@ def multivariate_data(
 TRAIN_SPLIT = 100
 tf.random.set_seed(10)
 
-past_history = 6  # 24
-future_target = 6  # 12
+# past_history = 6
+# future_target = 6
+past_history = 6
+future_target = 12
 STEP = 1
 
 ## Multi-Step model (predict a sequence of the future)
@@ -249,6 +251,7 @@ for x, y in val_data_multi.take(5):
 
 ## Save prediction model
 history_size = "_".join(map(str, [past_history, future_target]))
+# AttributeError: 'NoneType' object has no attribute 'device'
 multi_step_model.save(
     _output_dir + "multi_step_model_{}_{}.h5".format(history_size, get_today_str())
 )

@@ -17,15 +17,15 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 # mpl.rcParams['axes.grid'] = False
 
 
-# past_future = "6_12"
-past_future = "6_6"
+past_future = "6_12"
+# past_future = "6_6"
 _output_dir = "pred_model/"
 work_path = "D:\\workspace\\DeepLearning_codes\\AlphaReal\\input_data\\"
 
 features_li = ["JS", "MM", "Permits"]  # prediction model features
 target_feature = "MM"
-# target_feature_window_size = 12  # rolling div window
-target_feature_window_size = 6  # rolling div window
+target_feature_window_size = 12  # rolling div window
+# target_feature_window_size = 6  # rolling div window
 
 
 def get_today_str():
